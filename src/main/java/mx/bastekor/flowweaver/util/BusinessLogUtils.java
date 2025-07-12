@@ -6,6 +6,7 @@ import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.context.FlowWeaverContextHolder;
 import mx.bastekor.flowweaver.enums.StatusEnum;
+import mx.bastekor.flowweaver.mapper.BusinessLogMapper;
 import mx.bastekor.flowweaver.model.BusinessLogDTO;
 import mx.bastekor.flowweaver.model.BusinessLogEvent;
 import mx.bastekor.flowweaver.model.DataParamDTO;
@@ -53,7 +54,7 @@ public final class BusinessLogUtils {
                 .setFlowWeaverContextId(FlowWeaverContextHolder.get().getFlowId())
                 .setDuration(calculateDuration(start, end)) // Tiempo que tardo el proceso...
                 .setMethodContext(createMethodContext(joinPoint, output, exception)) // Contexto del método interceptado...
-                .setBusinessLogDTO(createBusinessLogDTO(businessLog)) // Transformación de la anotación a objeto
+                .setBusinessLogDTO(BusinessLogMapper.INSTANCE.createBusinessLogDTO(businessLog)) // Transformación de la anotación a objeto
                 .setStatus(status); // Estatus que representa si termino correctamente o con error
     }
 
@@ -77,30 +78,6 @@ public final class BusinessLogUtils {
                 .setArguments(getMethodArgs(joinPoint))
                 .setOutput(output)
                 .setException(exception);
-    }
-
-    private static BusinessLogDTO createBusinessLogDTO(BusinessLog businessLog) {
-        BusinessLogDTO businessLogDTO = new BusinessLogDTO();
-        businessLogDTO.setOperationCode(businessLog.operationCode());
-        businessLogDTO.setMode(businessLog.mode());
-        businessLogDTO.setDescription(businessLog.description());
-        businessLogDTO.setDefaultDescription(businessLog.defaultDescription());
-        businessLogDTO.setValue(businessLog.value());
-        businessLogDTO.setDefaultValue(businessLog.defaultValue());
-        businessLogDTO.setException(businessLog.exception());
-        businessLogDTO.setDefaultException(businessLog.defaultException());
-        businessLogDTO.setDataOut(getArrDataParamDTO(businessLog.dataOut()));
-        return businessLogDTO;
-    }
-
-    private static DataParamDTO[] getArrDataParamDTO(DataParam[] dataParams) {
-        return Arrays.stream(dataParams)
-                .map(BusinessLogUtils::getArrDataParamDTO)
-                .toArray(DataParamDTO[]::new);
-    }
-
-    private static DataParamDTO getArrDataParamDTO(DataParam dataParam) {
-        return new DataParamDTO(dataParam.key(), dataParam.value(), dataParam.defaultValue());
     }
 
     /**
@@ -156,7 +133,9 @@ public final class BusinessLogUtils {
      */
     private static List<String> getMethodAnnotations(Method method) {
         return Arrays.stream(method.getAnnotations())
-                .map(annotation -> annotation.annotationType().getSimpleName())
+//                .map(annotation -> annotation.annotationType().getSimpleName())
+                .map(Annotation::annotationType)
+                .map(Class::getSimpleName)
                 .toList();
     }
 
@@ -170,7 +149,9 @@ public final class BusinessLogUtils {
      */
     private static List<String> getArgumentAnnotations(Annotation[][] parameterAnnotations, int index) {
         return Arrays.stream(parameterAnnotations[index])
-                .map(annotations -> annotations.annotationType().getSimpleName())
+//                .map(annotations -> annotations.annotationType().getSimpleName())
+                .map(Annotation::annotationType)
+                .map(Class::getSimpleName)
                 .toList();
     }
 
