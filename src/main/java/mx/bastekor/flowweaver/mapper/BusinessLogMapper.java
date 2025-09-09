@@ -2,18 +2,16 @@ package mx.bastekor.flowweaver.mapper;
 
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
-import mx.bastekor.flowweaver.enums.Mode;
 import mx.bastekor.flowweaver.model.BusinessLogDTO;
 import mx.bastekor.flowweaver.model.DataParamDTO;
-import mx.bastekor.flowweaver.model.DataParamsDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
 
 @Mapper
 public interface BusinessLogMapper {
     BusinessLogMapper INSTANCE = Mappers.getMapper(BusinessLogMapper.class);
+
     @Mapping(target = "operationCode", expression = "java(businessLog.operationCode())")
     @Mapping(target = "description", expression = "java(businessLog.description())")
     @Mapping(target = "defaultDescription", expression = "java(businessLog.defaultDescription())")
@@ -21,6 +19,7 @@ public interface BusinessLogMapper {
     @Mapping(target = "defaultValue", expression = "java(businessLog.defaultValue())")
     @Mapping(target = "exception", expression = "java(businessLog.exception())")
     @Mapping(target = "defaultException", expression = "java(businessLog.defaultException())")
+    @Mapping(target = "mode", expression = "java(businessLog.mode())")
     @Mapping(target = "dataOut", expression = "java(createDataParamsDTO(businessLog.dataOut()))")
     BusinessLogDTO createBusinessLogDTO(BusinessLog businessLog);
 

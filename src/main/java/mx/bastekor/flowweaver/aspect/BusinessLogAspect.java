@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.FLOW_WEAVER_CONTEXT_ID;
+import static mx.bastekor.flowweaver.enums.StatusEnum.FAILURE;
+import static mx.bastekor.flowweaver.enums.StatusEnum.SUCCESS;
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.buildBusinessLogEvent;
 
 @Slf4j
@@ -32,24 +34,27 @@ public class BusinessLogAspect {
         FlowWeaverContextHolder.initOrReuse();
         String flowId = FlowWeaverContextHolder.getFlowId();
         MDC.put(FLOW_WEAVER_CONTEXT_ID, flowId);
+        log.info("[{}] - Start around BusinessLogAspect", flowId);
 
         StatusEnum status = null;
         Object output = null;
         Throwable exception = null;
 
         try {
-            status = StatusEnum.SUCCESS;
+            status = SUCCESS;
             output = joinPoint.proceed();
             return output;
         } catch (Throwable throwable) {
-            status = StatusEnum.FAILURE;
+            status = FAILURE;
             exception = throwable;
             throw throwable;
         } finally {
+            log.debug("[{}] - BusinessLog - Entrada({})", flowId, status.name());
             Instant end = Instant.now();
             BusinessLogEvent event = buildBusinessLogEvent(joinPoint, businessLog, start, end, status, output, exception);
             businessLogAspectService.enqueue(event);
-            log.info("[{}] BusinessLog - Salida({})", flowId, status.name());
+            log.debug("[{}] - BusinessLog - Salida({})", flowId, status.name());
+            log.info("[{}] - End around BusinessLogAspect", flowId);
             FlowWeaverContextHolder.clear();
         }
     }

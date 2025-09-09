@@ -3,13 +3,11 @@ package mx.bastekor.flowweaver.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
-import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.context.FlowWeaverContextHolder;
 import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.mapper.BusinessLogMapper;
 import mx.bastekor.flowweaver.model.BusinessLogDTO;
 import mx.bastekor.flowweaver.model.BusinessLogEvent;
-import mx.bastekor.flowweaver.model.DataParamDTO;
 import mx.bastekor.flowweaver.model.MethodArg;
 import mx.bastekor.flowweaver.model.MethodContext;
 import org.apache.commons.lang3.StringUtils;
@@ -133,7 +131,6 @@ public final class BusinessLogUtils {
      */
     private static List<String> getMethodAnnotations(Method method) {
         return Arrays.stream(method.getAnnotations())
-//                .map(annotation -> annotation.annotationType().getSimpleName())
                 .map(Annotation::annotationType)
                 .map(Class::getSimpleName)
                 .toList();
@@ -149,7 +146,6 @@ public final class BusinessLogUtils {
      */
     private static List<String> getArgumentAnnotations(Annotation[][] parameterAnnotations, int index) {
         return Arrays.stream(parameterAnnotations[index])
-//                .map(annotations -> annotations.annotationType().getSimpleName())
                 .map(Annotation::annotationType)
                 .map(Class::getSimpleName)
                 .toList();

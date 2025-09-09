@@ -9,47 +9,46 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Anotación para registrar información de trazabilidad funcional (bitácora de negocio)
- * durante la ejecución de un método.
+ * Anotación para registrar información de trazabilidad funcional (bitácora de negocio) durante la ejecución de un método.
  *
  * <p>
- * Permite declarar metadatos de forma estática o dinámica sobre la operación actual,
- * incluyendo código de operación, descripción, resultado del método y datos de salida personalizados.
+ * Permite declarar metadatos de forma estática o dinámica sobre la operación actual, incluyendo código de operación,
+ * descripción, resultado del método y datos de salida personalizados.
  * Esta anotación está diseñada para ser utilizada junto con mecanismos de interceptación como AOP.
  * </p>
  *
  * <p>
- * Las propiedades principales pueden contener expresiones dinámicas. Si una expresión
- * no se resuelve correctamente en tiempo de ejecución, se utilizará el valor de respaldo
- * correspondiente (por ejemplo, `defaultDescription`, `defaultValue`, etc.).
+ * Las propiedades principales pueden contener expresiones dinámicas. Si una expresión no se resuelve correctamente en
+ * tiempo de ejecución, se utilizará el valor de respaldo correspondiente <b>(defaultDescription, defaultValue, etc.)</b>.
  * </p>
  *
  * <p><b>Convenciones de evaluación:</b></p>
  * <ul>
  *   <li>Una propiedad se considera una <b>expresión</b> si contiene un valor no vacío.</li>
- *   <li>Se intentará evaluar dicha expresión contra el contexto del método (por ejemplo: <code>args</code>, <code>response</code>, <code>exception</code>).</li>
+ *   <li>Se intentará evaluar dicha expresión contra el contexto del método (por ejemplo: <code>args</code>,
+ *   <code>response</code>, <code>exception</code>).</li>
  *   <li>Si la evaluación falla, se usará el valor por defecto definido en la propiedad <code>defaultX</code>.</li>
- *   <li>Si ambas están vacías, la propiedad será ignorada.</li>
+ *   <li>Si ambas están vacías, la propiedad será ignorada (a menos que se asigne valor por objeto de forma manual).</li>
  * </ul>
  *
  * <p>
- * El comportamiento general de la anotación se controla mediante el atributo <code>mode</code>,
- * cuyo valor por defecto es <code>STATIC</code>.
+ * El comportamiento general de la anotación se controla mediante el atributo <code>mode</code>, cuyo valor por defecto
+ * es <code>STATIC</code>.
  * </p>
  *
  * <p><b>Ejemplo de uso:</b></p>
  * <pre>{@code
  * @BusinessLog(
  *   operationCode = "CLIENT-CREATE",
- *   description = "Creación de cliente",
+ *   description = "args[1].description",
  *   defaultDescription = "Se creó un nuevo cliente",
  *   value = "response.status",
  *   defaultValue = "200 OK",
  *   exception = "exception.message",
  *   defaultException = "Error inesperado",
  *   dataOut = {
- *     @DataParam(key = "clientId", value = "response.data.id", defaultValue = "N/A"),
- *     @DataParam(key = "clientName", value = "args.0.nombre", defaultValue = "Desconocido")
+ *     @DataParam(key = "clientId", value = "response.data.id", defaultValue = "9999-9999-9999-9999"),
+ *     @DataParam(key = "clientName", value = "args[0].nombre", defaultValue = "Interno")
  *   }
  * )
  * public ClienteResponse crearCliente(ClienteRequest request) {
@@ -79,12 +78,12 @@ public @interface BusinessLog {
      * Descripción del flujo funcional.
      * <p>
      * Se intenta resolver como expresión contra la configuración o metadata.
-     * Si falla, se toma `defaultDescription` como valor por defecto.
+     * Si falla, se toma <code>defaultDescription</code> como valor por defecto.
      */
     String description() default "";
 
     /**
-     * Descripción por defecto usada si no se puede resolver `description`.
+     * Descripción por defecto usada si no se puede resolver <code>description</code>.
      * <p>
      * Siempre se trata como texto plano.
      */
@@ -93,8 +92,8 @@ public @interface BusinessLog {
     /**
      * Expresión que representa el resultado del método exitoso.
      * <p>
-     * Se evalúa contra el objeto de retorno del método (`response`).
-     * Si no se resuelve correctamente, se toma `defaultValue`.
+     * Se evalúa contra el objeto de retorno del método (<code>response</code>).
+     * Si no se resuelve correctamente, se toma <code>defaultValue</code>.
      * <p>
      * Ejemplo:
      * - value = "status.code" → buscará en response.getStatus().getCode()
@@ -103,7 +102,7 @@ public @interface BusinessLog {
     String value() default "";
 
     /**
-     * Valor por defecto del resultado si no se resuelve `value`.
+     * Valor por defecto del resultado si no se resuelve <code>value</code>.
      * <p>
      * Siempre se trata como texto plano.
      */
@@ -112,8 +111,8 @@ public @interface BusinessLog {
     /**
      * Expresión que representa el valor a obtener en caso de excepción.
      * <p>
-     * Se evalúa contra la excepción lanzada (`Throwable`).
-     * Si no se resuelve correctamente, se toma `defaultException`.
+     * Se evalúa contra la excepción lanzada (<code>Throwable</code>).
+     * Si no se resuelve correctamente, se toma <code>defaultException</code>.
      * <p>
      * Ejemplo:
      * - exception = "error.code"
@@ -122,7 +121,7 @@ public @interface BusinessLog {
     String exception() default "";
 
     /**
-     * Valor por defecto en caso de excepción si no se resuelve `exception`.
+     * Valor por defecto en caso de excepción si no se resuelve <code>exception</code>.
      * <p>
      * Siempre se trata como texto plano.
      */
@@ -135,9 +134,12 @@ public @interface BusinessLog {
      * o uno dinámico (con extracción de datos en tiempo de ejecución).
      * <p>
      * Opciones:
-     * - STATIC (default): Se usa lo definido tal cual en la anotación o configuración.
-     * - DYNAMIC: Se permite extracción en tiempo de ejecución desde los argumentos y el resultado mediante datos de configuración.
-     * - MERGED: Combina ambos enfoques (usualmente se da preferencia al dinámico si se resuelve).
+     * <lo>
+     * <li><b>STATIC (default)</b>: Se usa lo definido tal cual en la anotación o configuración.</li>
+     * <li><b>DYNAMIC</b>: Se permite extracción en tiempo de ejecución desde los argumentos y el resultado
+     * mediante datos de configuración.</li>
+     * <li><b>MERGED</b>: Combina ambos enfoques (usualmente se da preferencia al dinámico si se resuelve).</li>
+     * </lo>
      */
     Mode mode() default Mode.STATIC;
 

@@ -48,12 +48,12 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
             businessLogEvent.getBusinessLogDTO().setOperationCode(generateOperationCode(businessLogEvent));
             try {
                 // Aquí iría la lógica real: enviar a BD, Kafka, HTTP, etc.
-                /**
+                /*
                  * En este punto deberemos de inyectar el servicio que reciba los objetos a manipular en claro,
                  * con en claro me refiero a que se envíen objetos que no dependan de la configuración, proceso,
                  * etc, etc.
                  * El servicio podrá ser reutilizado por aquellos a los que no les guste programar con anotaciones,
-                 * dejandoles que ellos realicen la implenentación a mano, pero que esta implementación sea al final
+                 * dejándoles que ellos realicen la implementación a mano, pero que esta implementación sea al final
                  * del día controlado por este componente.
                  */
                 this.logData(businessLogEvent);
@@ -71,7 +71,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
         log.info("[AUDIT] Entrando evento: {}", businessLogEvent);
         log.info("[AUDIT] Configuraciones: {}", businessLogConfig);
 
-        /**
+        /*
          * Aquí deberíamos de procesar todos los datos y transformarlos en objetos planos reutilizables
          * fuera de la lógia prevía en donde se obtuvieron los datos.
          */
