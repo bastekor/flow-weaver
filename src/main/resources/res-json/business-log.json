@@ -1,0 +1,17 @@
+{
+  "flow-code": "FL-123",
+  "description": "Registrar pedido",
+  "value": "",
+  "exception": "",
+  "mode": "STATIC",
+  "data": {
+    "in": [
+      {"key": "userId", "value": 42},
+      {"key": "productId", "value": 1001}
+    ],
+    "out": [
+      {"key": "orderId", "value": 987}
+    ],
+    "in-out": []
+  }
+}

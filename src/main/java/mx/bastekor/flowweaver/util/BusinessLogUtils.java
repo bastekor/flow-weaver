@@ -8,7 +8,7 @@ import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.mapper.BusinessLogMapper;
 import mx.bastekor.flowweaver.model.BusinessLogDTO;
 import mx.bastekor.flowweaver.model.BusinessLogEvent;
-import mx.bastekor.flowweaver.model.MethodArg;
+import mx.bastekor.flowweaver.model.Argument;
 import mx.bastekor.flowweaver.model.MethodContext;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -73,7 +73,7 @@ public final class BusinessLogUtils {
                 .setMethodName(method.getName())
                 .setReturnType(method.getReturnType().getSimpleName())
                 .setMethodAnnotations(getMethodAnnotations(method))
-                .setArguments(getMethodArgs(joinPoint))
+                .setArguments(getArguments(joinPoint))
                 .setOutput(output)
                 .setException(exception);
     }
@@ -99,9 +99,9 @@ public final class BusinessLogUtils {
      * de la representación y tratarlos en un objeto custom {@link BusinessLogEvent}.
      *
      * @param joinPoint Interceptor
-     * @return Lista de objetos {@link MethodArg} con los metadatos de cada argumento.
+     * @return Lista de objetos {@link Argument} con los metadatos de cada argumento.
      */
-    private static List<MethodArg> getMethodArgs(ProceedingJoinPoint joinPoint) {
+    private static List<Argument> getArguments(ProceedingJoinPoint joinPoint) {
 
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
@@ -109,7 +109,7 @@ public final class BusinessLogUtils {
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
         Object[] args = joinPoint.getArgs();
 
-        List<MethodArg> methodArgs = new ArrayList<>();
+        List<Argument> arguments = new ArrayList<>();
         for (int i = 0; i < parameters.length; i++) {
 
             Parameter parameter = parameters[i];
@@ -118,9 +118,9 @@ public final class BusinessLogUtils {
             Object value = args[i];
             List<String> annotations = getArgumentAnnotations(parameterAnnotations, i);
 
-            methodArgs.add(new MethodArg(i, name, type, value, annotations));
+            arguments.add(new Argument(i, name, type, value, annotations));
         }
-        return methodArgs;
+        return arguments;
     }
 
     /**
