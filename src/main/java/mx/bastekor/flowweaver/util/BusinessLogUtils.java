@@ -6,9 +6,9 @@ import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.context.FlowWeaverContextHolder;
 import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.mapper.BusinessLogMapper;
+import mx.bastekor.flowweaver.model.Argument;
 import mx.bastekor.flowweaver.model.BusinessLogDTO;
 import mx.bastekor.flowweaver.model.BusinessLogEvent;
-import mx.bastekor.flowweaver.model.Argument;
 import mx.bastekor.flowweaver.model.MethodContext;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -17,8 +17,6 @@ import org.aspectj.lang.reflect.MethodSignature;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,8 +32,6 @@ public final class BusinessLogUtils {
      *
      * @param joinPoint   Interceptor del evento
      * @param businessLog Anotación interceptada
-     * @param start       Objeto Instant que representa el inicio del proceso.
-     * @param end         Objeto Instant que representa el fin del proceso.
      * @param status      Enum con el valor del resultado (SUCCESS | FAILURE).
      * @param output      Valor del resultado del método interceptado (puede ser nulo si es que hubo excepción).
      * @param exception   Excepción interceptada (puede ser nulo si es que todo funciono bien).
@@ -43,16 +39,14 @@ public final class BusinessLogUtils {
      */
     public static BusinessLogEvent buildBusinessLogEvent(ProceedingJoinPoint joinPoint,
                                                          BusinessLog businessLog,
-                                                         Instant start,
-                                                         Instant end,
                                                          StatusEnum status,
                                                          Object output,
                                                          Throwable exception) {
         return new BusinessLogEvent()
-                .setFlowWeaverContextId(FlowWeaverContextHolder.get().getFlowId())
-                .setDuration(calculateDuration(start, end)) // Tiempo que tardo el proceso...
+                .setFlowWeaverContextId(FlowWeaverContextHolder.getFlowId())
+                .setDuration(FlowWeaverContextHolder.getDuration()) // Tiempo que tardo el proceso...
                 .setMethodContext(createMethodContext(joinPoint, output, exception)) // Contexto del método interceptado...
-                .setBusinessLogDTO(BusinessLogMapper.INSTANCE.createBusinessLogDTO(businessLog)) // Transformación de la anotación a objeto
+                .setBusinessLogDTO(BusinessLogMapper.createBusinessLogDTO(businessLog)) // Transformación de la anotación a objeto
                 .setStatus(status); // Estatus que representa si termino correctamente o con error
     }
 
@@ -149,26 +143,5 @@ public final class BusinessLogUtils {
                 .map(Annotation::annotationType)
                 .map(Class::getSimpleName)
                 .toList();
-    }
-
-    /**
-     * Método encargado de realizar la estimación de la duración del proceso interceptado, retornando
-     * el valor en una cadena de texto similar a los siguientes resultados: ["1s 245ms" o "135ms"]
-     *
-     * @param start Objeto Instant de inicio del proceso.
-     * @param end   Objeto Instant de fin del proceso.
-     * @return Duración calculada del proceso.
-     */
-    private static String calculateDuration(Instant start, Instant end) {
-        long millis = Duration.between(start, end).toMillis();
-
-        long seconds = millis / 1000;
-        long remainderMillis = millis % 1000;
-
-        if (seconds > 0) {
-            return String.format("%ds %dms", seconds, remainderMillis);
-        } else {
-            return String.format("%dms", remainderMillis);
-        }
     }
 }

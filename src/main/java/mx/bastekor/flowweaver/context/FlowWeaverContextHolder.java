@@ -70,6 +70,14 @@ public class FlowWeaverContextHolder {
     }
 
     /**
+     * Método encargado de realizar la estimación de la duración del proceso interceptado, retornando
+     * el valor en una cadena de texto similar a los siguientes resultados: ["1s 245ms" o "135ms"]
+     */
+    public static String getDuration() {
+        return get().getDuration();
+    }
+
+    /**
      * Libera una referencia al contexto actual.
      * Si el contador de referencias llega a cero, limpia el contexto del hilo.
      * <p>

@@ -1,29 +1,35 @@
 package mx.bastekor.flowweaver.mapper;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.model.BusinessLogDTO;
 import mx.bastekor.flowweaver.model.DataParamDTO;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
 
-@Mapper
-public interface BusinessLogMapper {
-    BusinessLogMapper INSTANCE = Mappers.getMapper(BusinessLogMapper.class);
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class BusinessLogMapper {
 
-    @Mapping(target = "operationCode", expression = "java(businessLog.operationCode())")
-    @Mapping(target = "description", expression = "java(businessLog.description())")
-    @Mapping(target = "defaultDescription", expression = "java(businessLog.defaultDescription())")
-    @Mapping(target = "value", expression = "java(businessLog.value())")
-    @Mapping(target = "defaultValue", expression = "java(businessLog.defaultValue())")
-    @Mapping(target = "exception", expression = "java(businessLog.exception())")
-    @Mapping(target = "defaultException", expression = "java(businessLog.defaultException())")
-    @Mapping(target = "mode", expression = "java(businessLog.mode())")
-    @Mapping(target = "dataOut", expression = "java(createDataParamsDTO(businessLog.dataOut()))")
-    BusinessLogDTO createBusinessLogDTO(BusinessLog businessLog);
+    public static BusinessLogDTO createBusinessLogDTO(BusinessLog businessLog) {
+        if (businessLog == null) {
+            return null;
+        }
 
-    default DataParamDTO[] createDataParamsDTO(DataParam[] dataParams) {
+        BusinessLogDTO businessLogDTO = new BusinessLogDTO();
+        businessLogDTO.setOperationCode(businessLog.operationCode());
+        businessLogDTO.setDescription(businessLog.description());
+        businessLogDTO.setDefaultDescription(businessLog.defaultDescription());
+        businessLogDTO.setValue(businessLog.value());
+        businessLogDTO.setDefaultValue(businessLog.defaultValue());
+        businessLogDTO.setException(businessLog.exception());
+        businessLogDTO.setDefaultException(businessLog.defaultException());
+        businessLogDTO.setMode(businessLog.mode());
+        businessLogDTO.setDataOut(createDataParamsDTO(businessLog.dataOut()));
+
+        return businessLogDTO;
+    }
+
+    private static DataParamDTO[] createDataParamsDTO(DataParam[] dataParams) {
         if (dataParams == null) {
             return null;
         }
@@ -37,8 +43,17 @@ public interface BusinessLogMapper {
         return dataParamDTOs;
     }
 
-    @Mapping(target = "key", expression = "java(dataParam.key())")
-    @Mapping(target = "value", expression = "java(dataParam.value())")
-    @Mapping(target = "defaultValue", expression = "java(dataParam.defaultValue())")
-    DataParamDTO createDataParamDTO(DataParam dataParam);
+    private static DataParamDTO createDataParamDTO(DataParam dataParam) {
+        if (dataParam == null) {
+            return null;
+        }
+
+        DataParamDTO dataParamDTO = new DataParamDTO();
+
+        dataParamDTO.setKey(dataParam.key());
+        dataParamDTO.setValue(dataParam.value());
+        dataParamDTO.setDefaultValue(dataParam.defaultValue());
+
+        return dataParamDTO;
+    }
 }
