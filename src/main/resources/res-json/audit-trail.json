@@ -1,0 +1,22 @@
+{
+  "flow-code": "",
+  "operation-code": "",
+  "description": "",
+  "value": "",
+  "exception": "",
+  "mode": "",
+  "data": {
+    "in": {
+      "key": "",
+      "value": ""
+    },
+    "out": {
+      "key": "",
+      "value": ""
+    },
+    "in-out": {
+      "key": "",
+      "value": ""
+    }
+  }
+}

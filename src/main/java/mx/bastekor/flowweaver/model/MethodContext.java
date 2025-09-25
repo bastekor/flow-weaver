@@ -20,7 +20,7 @@ public class MethodContext {
     private String methodName;
     private String returnType;
     private List<String> methodAnnotations;
-    private List<MethodArg> arguments;
+    private List<Argument> arguments;
     private Object output;
     private Throwable exception;
 }

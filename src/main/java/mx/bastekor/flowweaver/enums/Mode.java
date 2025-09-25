@@ -1,6 +1,7 @@
 package mx.bastekor.flowweaver.enums;
 
 import lombok.AllArgsConstructor;
+import lombok.ToString;
 
 /**
  * Enum que representa el modo de evaluación para la anotación {@link mx.bastekor.flowweaver.annotation.BusinessLog}.
@@ -11,6 +12,7 @@ import lombok.AllArgsConstructor;
  *   <li>{@link #MERGED}: Fusiona ambos modos. Se prioriza la configuración externa, y si no existe, se usa el valor de la anotación.</li>
  * </ul>
  */
+@ToString
 @AllArgsConstructor
 public enum Mode {
 

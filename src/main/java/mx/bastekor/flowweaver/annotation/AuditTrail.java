@@ -59,15 +59,15 @@ import java.lang.annotation.Target;
  * <pre>{@code
  * @AuditTrail(
  *   relatedBusinessCode = "CLIENT-CREATE",
- *   operationCode = "CLIENT-CREATE",
- *   description = "Auditoría de creación de cliente",
+ *   operationCode = "client.trx.payId",
+ *   description = "client.trx.payDesc",
  *   defaultDescription = "Se audita la creación del cliente",
  *   value = "response.status",
  *   defaultValue = "OK",
  *   exception = "exception.message",
  *   defaultException = "Error inesperado",
  *   dataIn = {
- *     @DataParam(key = "requestNombre", value = "args.0.nombre", defaultValue = "Desconocido")
+ *     @DataParam(key = "requestNombre", value = "args[0].nombre", defaultValue = "Desconocido")
  *   },
  *   dataOut = {
  *     @DataParam(key = "clientId", value = "response.data.id", defaultValue = "N/A")
@@ -102,12 +102,12 @@ public @interface AuditTrail {
      * Descripción del flujo funcional.
      * <p>
      * Se intenta resolver como expresión contra la configuración o metadata.
-     * Si falla, se toma `defaultDescription` como valor por defecto.
+     * Si falla, se toma <code>defaultDescription</code> como valor por defecto.
      */
     String description() default "";
 
     /**
-     * Descripción por defecto usada si no se puede resolver `description`.
+     * Descripción por defecto usada si no se puede resolver <code>description</code>.
      * <p>
      * Siempre se trata como texto plano.
      */
@@ -116,8 +116,8 @@ public @interface AuditTrail {
     /**
      * Expresión que representa el resultado del método exitoso.
      * <p>
-     * Se evalúa contra el objeto de retorno del método (`response`).
-     * Si no se resuelve correctamente, se toma `defaultValue`.
+     * Se evalúa contra el objeto de retorno del método (<code>response</code>).
+     * Si no se resuelve correctamente, se toma <code>defaultValue</code>.
      * <p>
      * Ejemplo:
      * - value = "status.code" → buscará en response.getStatus().getCode()
@@ -126,7 +126,7 @@ public @interface AuditTrail {
     String value() default "";
 
     /**
-     * Valor por defecto del resultado si no se resuelve `value`.
+     * Valor por defecto del resultado si no se resuelve <code>value</code>.
      * <p>
      * Siempre se trata como texto plano.
      */
@@ -135,8 +135,8 @@ public @interface AuditTrail {
     /**
      * Expresión que representa el valor a obtener en caso de excepción.
      * <p>
-     * Se evalúa contra la excepción lanzada (`Throwable`).
-     * Si no se resuelve correctamente, se toma `defaultException`.
+     * Se evalúa contra la excepción lanzada (<code>Throwable</code>).
+     * Si no se resuelve correctamente, se toma <code>defaultException</code>.
      * <p>
      * Ejemplo:
      * - exception = "error.code"
@@ -145,7 +145,7 @@ public @interface AuditTrail {
     String exception() default "";
 
     /**
-     * Valor por defecto en caso de excepción si no se resuelve `exception`.
+     * Valor por defecto en caso de excepción si no se resuelve <code>exception</code>.
      * <p>
      * Siempre se trata como texto plano.
      */
@@ -158,9 +158,12 @@ public @interface AuditTrail {
      * o uno dinámico (con extracción de datos en tiempo de ejecución).
      * <p>
      * Opciones:
-     * - STATIC (default): Se usa lo definido tal cual en la anotación o configuración.
-     * - DYNAMIC: Se permite extracción en tiempo de ejecución desde los argumentos y el resultado mediante datos de configuración.
-     * - MERGED: Combina ambos enfoques (usualmente se da preferencia al dinámico si se resuelve).
+     * <lo>
+     * <li><b>STATIC (default)</b>: Se usa lo definido tal cual en la anotación o configuración.</li>
+     * <li><b>DYNAMIC</b>: Se permite extracción en tiempo de ejecución desde los argumentos y el resultado
+     * mediante datos de configuración.</li>
+     * <li><b>MERGED</b>: Combina ambos enfoques (usualmente se da preferencia al dinámico si se resuelve).</li>
+     * </lo>
      */
     Mode mode() default Mode.STATIC;
 

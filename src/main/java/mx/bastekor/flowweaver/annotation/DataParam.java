@@ -14,12 +14,12 @@ import java.lang.annotation.Target;
  * desde los argumentos del método interceptado, evaluando primero el valor como una expresión,
  * y en caso de no resolverse, utilizando un valor por defecto.
  * <p>
- * Esta anotación debe ser usada exclusivamente como parte de otra anotación, en esté caso dentro de
+ * Esta anotación debe ser usada exclusivamente como parte de otra anotación, en este caso dentro de
  * {@link BusinessLog#dataOut()}.
  *
  * <p><b>Reglas de resolución:</b></p>
  * <ul>
- *   <li>Si {@code value} contiene una expresión válida (por ejemplo: response.data.id o args.0.nombre), se intenta evaluarla.</li>
+ *   <li>Si {@code value} contiene una expresión válida (por ejemplo: response.data.id o args[0].nombre), se intenta evaluarla.</li>
  *   <li>Si no puede resolverse, se utiliza el valor de {@code defaultValue} como respaldo.</li>
  *   <li>Si ambos son vacíos, el campo se ignora.</li>
  * </ul>
@@ -30,7 +30,7 @@ import java.lang.annotation.Target;
  * @BusinessLog(
  *   dataOut = {
  *     @DataParam(key = "userId", value = "response.user.id", defaultValue = "0"),
- *     @DataParam(key = "username", value = "args.0.username", defaultValue = "desconocido")
+ *     @DataParam(key = "username", value = "args[0].username", defaultValue = "desconocido")
  *   }
  * )
  * }
@@ -53,7 +53,7 @@ public @interface DataParam {
      * Expresión que define el valor a extraer desde los argumentos del método.
      * Si la expresión no puede resolverse, se utilizará {@link #defaultValue()}.
      * <p>
-     * Ejemplo: "args.0.nombre", "cliente.id", etc.
+     * Ejemplo: "args[0].nombre", "cliente.id", etc.
      *
      * @return expresión para extracción de datos
      */

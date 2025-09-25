@@ -3,13 +3,12 @@ package mx.bastekor.flowweaver.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
-import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.context.FlowWeaverContextHolder;
 import mx.bastekor.flowweaver.enums.StatusEnum;
+import mx.bastekor.flowweaver.mapper.BusinessLogMapper;
 import mx.bastekor.flowweaver.model.BusinessLogDTO;
 import mx.bastekor.flowweaver.model.BusinessLogEvent;
-import mx.bastekor.flowweaver.model.DataParamDTO;
-import mx.bastekor.flowweaver.model.MethodArg;
+import mx.bastekor.flowweaver.model.Argument;
 import mx.bastekor.flowweaver.model.MethodContext;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -53,7 +52,7 @@ public final class BusinessLogUtils {
                 .setFlowWeaverContextId(FlowWeaverContextHolder.get().getFlowId())
                 .setDuration(calculateDuration(start, end)) // Tiempo que tardo el proceso...
                 .setMethodContext(createMethodContext(joinPoint, output, exception)) // Contexto del método interceptado...
-                .setBusinessLogDTO(createBusinessLogDTO(businessLog)) // Transformación de la anotación a objeto
+                .setBusinessLogDTO(BusinessLogMapper.INSTANCE.createBusinessLogDTO(businessLog)) // Transformación de la anotación a objeto
                 .setStatus(status); // Estatus que representa si termino correctamente o con error
     }
 
@@ -74,33 +73,9 @@ public final class BusinessLogUtils {
                 .setMethodName(method.getName())
                 .setReturnType(method.getReturnType().getSimpleName())
                 .setMethodAnnotations(getMethodAnnotations(method))
-                .setArguments(getMethodArgs(joinPoint))
+                .setArguments(getArguments(joinPoint))
                 .setOutput(output)
                 .setException(exception);
-    }
-
-    private static BusinessLogDTO createBusinessLogDTO(BusinessLog businessLog) {
-        BusinessLogDTO businessLogDTO = new BusinessLogDTO();
-        businessLogDTO.setOperationCode(businessLog.operationCode());
-        businessLogDTO.setMode(businessLog.mode());
-        businessLogDTO.setDescription(businessLog.description());
-        businessLogDTO.setDefaultDescription(businessLog.defaultDescription());
-        businessLogDTO.setValue(businessLog.value());
-        businessLogDTO.setDefaultValue(businessLog.defaultValue());
-        businessLogDTO.setException(businessLog.exception());
-        businessLogDTO.setDefaultException(businessLog.defaultException());
-        businessLogDTO.setDataOut(getArrDataParamDTO(businessLog.dataOut()));
-        return businessLogDTO;
-    }
-
-    private static DataParamDTO[] getArrDataParamDTO(DataParam[] dataParams) {
-        return Arrays.stream(dataParams)
-                .map(BusinessLogUtils::getArrDataParamDTO)
-                .toArray(DataParamDTO[]::new);
-    }
-
-    private static DataParamDTO getArrDataParamDTO(DataParam dataParam) {
-        return new DataParamDTO(dataParam.key(), dataParam.value(), dataParam.defaultValue());
     }
 
     /**
@@ -124,9 +99,9 @@ public final class BusinessLogUtils {
      * de la representación y tratarlos en un objeto custom {@link BusinessLogEvent}.
      *
      * @param joinPoint Interceptor
-     * @return Lista de objetos {@link MethodArg} con los metadatos de cada argumento.
+     * @return Lista de objetos {@link Argument} con los metadatos de cada argumento.
      */
-    private static List<MethodArg> getMethodArgs(ProceedingJoinPoint joinPoint) {
+    private static List<Argument> getArguments(ProceedingJoinPoint joinPoint) {
 
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
@@ -134,7 +109,7 @@ public final class BusinessLogUtils {
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
         Object[] args = joinPoint.getArgs();
 
-        List<MethodArg> methodArgs = new ArrayList<>();
+        List<Argument> arguments = new ArrayList<>();
         for (int i = 0; i < parameters.length; i++) {
 
             Parameter parameter = parameters[i];
@@ -143,9 +118,9 @@ public final class BusinessLogUtils {
             Object value = args[i];
             List<String> annotations = getArgumentAnnotations(parameterAnnotations, i);
 
-            methodArgs.add(new MethodArg(i, name, type, value, annotations));
+            arguments.add(new Argument(i, name, type, value, annotations));
         }
-        return methodArgs;
+        return arguments;
     }
 
     /**
@@ -156,7 +131,8 @@ public final class BusinessLogUtils {
      */
     private static List<String> getMethodAnnotations(Method method) {
         return Arrays.stream(method.getAnnotations())
-                .map(annotation -> annotation.annotationType().getSimpleName())
+                .map(Annotation::annotationType)
+                .map(Class::getSimpleName)
                 .toList();
     }
 
@@ -170,7 +146,8 @@ public final class BusinessLogUtils {
      */
     private static List<String> getArgumentAnnotations(Annotation[][] parameterAnnotations, int index) {
         return Arrays.stream(parameterAnnotations[index])
-                .map(annotations -> annotations.annotationType().getSimpleName())
+                .map(Annotation::annotationType)
+                .map(Class::getSimpleName)
                 .toList();
     }
 
