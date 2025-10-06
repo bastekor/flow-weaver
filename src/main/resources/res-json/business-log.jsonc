@@ -1,8 +1,9 @@
 {
+  "request-id": "12345-67890-12345-67890",
   "flow-code": "FL-123",
   "description": "Registrar pedido",
-  "value": "",
-  "exception": "",
+  "status": "SUCCESS",
+  "result": "OK", // aquí el valor de value o exception
   "mode": "STATIC",
   "data": {
     "in": [

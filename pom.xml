@@ -6,14 +6,15 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.5</version>
+        <version>3.1.0</version>
     </parent>
 
     <groupId>mx.bastekor</groupId>
     <artifactId>flow-weaver</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1-BETA</version>
     <name>flow-weaver</name>
     <description>flow-weaver</description>
+    <packaging>jar</packaging>
 
     <properties>
         <java.version>17</java.version>
@@ -86,19 +87,19 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-            			<plugin>
-            				<groupId>org.apache.maven.plugins</groupId>
-            				<artifactId>maven-source-plugin</artifactId>
-            				<version>3.2.1</version>
-            				<executions>
-            					<execution>
-            						<id>attach-sources</id>
-            						<goals>
-            							<goal>jar</goal>
-            						</goals>
-            					</execution>
-            				</executions>
-            			</plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

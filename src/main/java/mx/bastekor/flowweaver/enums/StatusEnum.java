@@ -4,5 +4,5 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public enum StatusEnum {
-    SUCCESS, FAILURE
+    SUCCESS, FAILURE, ERROR
 }

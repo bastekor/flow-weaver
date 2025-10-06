@@ -1,4 +1,6 @@
-package mx.bastekor.flowweaver.model;
+package mx.bastekor.flowweaver.dto;
+
+import mx.bastekor.flowweaver.model.LogSegment;
 
 import static org.apache.commons.lang3.StringUtils.defaultString;
 
@@ -16,7 +18,8 @@ public class TraceableMetadataDTO extends LogSegment {
     @Override
     public String toPipeString() {
         return String.join("|",
-                defaultString(uuid),
+
+                (uuid),
                 defaultString(timestamp),
                 defaultString(operationCode),
                 defaultString(operationDescription),

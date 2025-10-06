@@ -5,12 +5,9 @@ import lombok.NoArgsConstructor;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.context.FlowWeaverContextHolder;
 import mx.bastekor.flowweaver.enums.StatusEnum;
-import mx.bastekor.flowweaver.mapper.BusinessLogMapper;
 import mx.bastekor.flowweaver.model.Argument;
-import mx.bastekor.flowweaver.model.BusinessLogDTO;
 import mx.bastekor.flowweaver.model.BusinessLogEvent;
 import mx.bastekor.flowweaver.model.MethodContext;
-import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
@@ -20,7 +17,9 @@ import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
+
+import static mx.bastekor.flowweaver.mapper.BusinessLogMapper.createBusinessLogDTO;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class BusinessLogUtils {
@@ -42,12 +41,14 @@ public final class BusinessLogUtils {
                                                          StatusEnum status,
                                                          Object output,
                                                          Throwable exception) {
-        return new BusinessLogEvent()
-                .setFlowWeaverContextId(FlowWeaverContextHolder.getFlowId())
-                .setDuration(FlowWeaverContextHolder.getDuration()) // Tiempo que tardo el proceso...
-                .setMethodContext(createMethodContext(joinPoint, output, exception)) // Contexto del método interceptado...
-                .setBusinessLogDTO(BusinessLogMapper.createBusinessLogDTO(businessLog)) // Transformación de la anotación a objeto
-                .setStatus(status); // Estatus que representa si termino correctamente o con error
+        final BusinessLogEvent businessLogEvent = new BusinessLogEvent();
+        businessLogEvent.setFlowWeaverContextId(FlowWeaverContextHolder.getFlowId());
+        businessLogEvent.setDuration(FlowWeaverContextHolder.getDuration()); // Tiempo que tardo el proceso...
+        businessLogEvent.setMethodContext(createMethodContext(joinPoint, output, exception)); // Contexto del método interceptado...
+        businessLogEvent.setBusinessLogDTO(createBusinessLogDTO(businessLog)); // Transformación de la anotación a objeto
+        businessLogEvent.setStatus(status); // Estatus que representa si termino correctamente o con error
+        generateFlowCode(businessLogEvent); // Se valida el "flowCode" y se genera si es que no lo tiene.
+        return businessLogEvent;
     }
 
     /**
@@ -73,19 +74,17 @@ public final class BusinessLogUtils {
     }
 
     /**
-     * Método encargado de recuperar/generar el código de la operación del flujo.
+     * Método encargado de validar si el "flowCode" existe y si no lo tiene, se genera uno por defecto.
      *
      * @param businessLogEvent Objeto llenado a partir del interceptor {@link BusinessLog}
-     * @return Código de la operación.
      */
-    public static String generateOperationCode(BusinessLogEvent businessLogEvent) {
-        return Optional.of(businessLogEvent)
-                .map(BusinessLogEvent::getBusinessLogDTO)
-                .map(BusinessLogDTO::getOperationCode)
-                .filter(StringUtils::isNotBlank)
-                .orElse(businessLogEvent.getMethodContext().getClassName() +
-                        "#" +
-                        businessLogEvent.getMethodContext().getMethodName());
+    private static void generateFlowCode(BusinessLogEvent businessLogEvent) {
+        if (isBlank(businessLogEvent.getBusinessLogDTO().getFlowCode())) {
+            final String flowCode = businessLogEvent.getMethodContext().getClassName() +
+                    "#" +
+                    businessLogEvent.getMethodContext().getMethodName();
+            businessLogEvent.getBusinessLogDTO().setFlowCode(flowCode);
+        }
     }
 
     /**

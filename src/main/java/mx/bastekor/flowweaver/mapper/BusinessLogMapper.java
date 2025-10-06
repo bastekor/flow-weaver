@@ -4,19 +4,27 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
-import mx.bastekor.flowweaver.model.BusinessLogDTO;
-import mx.bastekor.flowweaver.model.DataParamDTO;
+import mx.bastekor.flowweaver.dto.BusinessLogDTO;
+import mx.bastekor.flowweaver.dto.DataParamDTO;
 
+/**
+ * Clase Mapeadora de {@link BusinessLog} a {@link BusinessLogDTO}.
+ */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class BusinessLogMapper {
 
+    /**
+     * Método encargado de mapear de {@link BusinessLog} a {@link BusinessLogDTO}.
+     * @param businessLog Anotación de negocio.
+     * @return {@link BusinessLogDTO} mapeado.
+     */
     public static BusinessLogDTO createBusinessLogDTO(BusinessLog businessLog) {
         if (businessLog == null) {
             return null;
         }
 
         BusinessLogDTO businessLogDTO = new BusinessLogDTO();
-        businessLogDTO.setOperationCode(businessLog.operationCode());
+        businessLogDTO.setFlowCode(businessLog.operationCode());
         businessLogDTO.setDescription(businessLog.description());
         businessLogDTO.setDefaultDescription(businessLog.defaultDescription());
         businessLogDTO.setValue(businessLog.value());
@@ -29,6 +37,11 @@ public final class BusinessLogMapper {
         return businessLogDTO;
     }
 
+    /**
+     * Método encargado de crear un array de {@link DataParamDTO} a partir de un array de {@link DataParam}.
+     * @param dataParams Array de {@link DataParam}.
+     * @return Array de {@link DataParamDTO}.
+     */
     private static DataParamDTO[] createDataParamsDTO(DataParam[] dataParams) {
         if (dataParams == null) {
             return null;
@@ -43,17 +56,20 @@ public final class BusinessLogMapper {
         return dataParamDTOs;
     }
 
+    /**
+     * Método encargado de crear un {@link DataParamDTO} a partir de un {@link DataParam}.
+     * @param dataParam {@link DataParam}.
+     * @return {@link DataParamDTO}.
+     */
     private static DataParamDTO createDataParamDTO(DataParam dataParam) {
         if (dataParam == null) {
             return null;
         }
 
         DataParamDTO dataParamDTO = new DataParamDTO();
-
         dataParamDTO.setKey(dataParam.key());
         dataParamDTO.setValue(dataParam.value());
         dataParamDTO.setDefaultValue(dataParam.defaultValue());
-
         return dataParamDTO;
     }
 }

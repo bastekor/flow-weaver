@@ -1,4 +1,4 @@
-package mx.bastekor.flowweaver.model;
+package mx.bastekor.flowweaver.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,7 +13,7 @@ import mx.bastekor.flowweaver.enums.Mode;
 @AllArgsConstructor
 @ToString(callSuper = true)
 public class BusinessLogDTO extends DataParamsDTO {
-    private String operationCode;
+    private String flowCode;
     private String description;
     private String defaultDescription;
     private String value;

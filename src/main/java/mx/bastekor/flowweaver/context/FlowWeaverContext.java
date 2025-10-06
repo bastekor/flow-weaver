@@ -64,21 +64,23 @@ public class FlowWeaverContext {
 
     /**
      * Método encargado de realizar la estimación de la duración del proceso interceptado, retornando
-     * el valor en una cadena de texto similar a los siguientes resultados: ["1s 245ms" o "135ms"]
+     * el valor en una cadena de texto similar a los siguientes resultados: ["1m 34s.657ms", "1s.245ms" o "135ms"]
      *
      * @return Duración calculada del proceso.
      */
     public String getDuration() {
         Instant end = now();
-        long millis = Duration.between(start, end).toMillis();
+        Duration duration = Duration.between(start, end);
 
-        long seconds = millis / 1000;
-        long remainderMillis = millis % 1000;
+        long totalMillis = duration.toMillis();
 
-        if (seconds > 0) {
-            return String.format("%ds %dms", seconds, remainderMillis);
-        } else {
-            return String.format("%dms", remainderMillis);
-        }
+//        long hours = totalMillis / (1000 * 60 * 60);
+        long minutes = (totalMillis / (1000 * 60)) % 60;
+        long seconds = (totalMillis / 1000) % 60;
+        long millis = totalMillis % 1000;
+
+//        return String.format("%dh %dm %ds.%dml", hours, minutes, seconds, millis);
+        return String.format("%dm %ds.%dml", minutes, seconds, millis);
+
     }
 }
