@@ -14,6 +14,9 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.FLOW_WEAVER_CONTEXT_ID;
+import static mx.bastekor.flowweaver.context.FlowWeaverContextHolder.getFlowId;
+import static mx.bastekor.flowweaver.context.FlowWeaverContextHolder.initOrReuse;
+import static mx.bastekor.flowweaver.context.FlowWeaverContextHolder.release;
 import static mx.bastekor.flowweaver.enums.StatusEnum.ERROR;
 import static mx.bastekor.flowweaver.enums.StatusEnum.FAILURE;
 import static mx.bastekor.flowweaver.enums.StatusEnum.SUCCESS;
@@ -29,10 +32,11 @@ public class BusinessLogAspect {
 
     @Around("@annotation(businessLog)")
     public Object around(ProceedingJoinPoint joinPoint, BusinessLog businessLog) throws Throwable {
-        FlowWeaverContextHolder.initOrReuse();
-        String flowId = FlowWeaverContextHolder.getFlowId();
+        initOrReuse();
+        String flowId = getFlowId();
         MDC.put(FLOW_WEAVER_CONTEXT_ID, flowId);
-        log.info("[{}] - Start around BusinessLogAspect", flowId);
+        log.info("===== Start interceptor for BusinessLog ===== ");
+        log.debug("s_BusinessLog ID :: [{}]", flowId);
 
         StatusEnum status = null;
         Object output = null;
@@ -47,22 +51,20 @@ public class BusinessLogAspect {
             exception = throwable;
             throw throwable;
         } finally {
-            log.debug("[{}] - BusinessLog - Entrada({})", flowId, status.name());
+            log.debug("e_BusinessLog ID :: [{}|{}]", status, flowId);
             // Lo siguiente no debería por ninguna razón fallar ya que es la data "estática" no tratada.
             BusinessLogEvent event = buildBusinessLogEvent(joinPoint, businessLog, status, output, exception);
             try {
                 businessLogAspectService.enqueue(event);
-                log.debug("[{}] - BusinessLog - Salida({})", flowId, status.name());
-                FlowWeaverContextHolder.release();
-                log.info("[{}] - End around BusinessLogAspect", flowId);
-                FlowWeaverContextHolder.release();
+                release();
             } catch (Exception e) {
                 status = ERROR;
                 // Error de mi lógica, no debe afectar el flujo normal.
-                log.error("[{}] - End around BusinessLogAspect::Err({})", flowId, e.getMessage(), e);
+                log.error("BusinessLog error ID :: [{}|{}], MSG: {}", status, flowId, e.getMessage(), e);
                 // mandemos solo aquello que es posible que se pueda mandar.
-                FlowWeaverContextHolder.release();
+                release();
             }
+            log.info("===== End interceptor for BusinessLog ===== ");
         }
     }
 }
