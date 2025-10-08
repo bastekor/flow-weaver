@@ -1,12 +1,11 @@
 package mx.bastekor.flowweaver.context;
 
-import lombok.Getter;
-import lombok.ToString;
-
 import java.time.Duration;
 import java.time.Instant;
-
 import static java.time.Instant.now;
+
+import lombok.Getter;
+import lombok.ToString;
 
 /**
  * Representa el contexto de un flujo individual dentro de un hilo.
@@ -64,7 +63,7 @@ public class FlowWeaverContext {
 
     /**
      * Método encargado de realizar la estimación de la duración del proceso interceptado, retornando
-     * el valor en una cadena de texto similar a los siguientes resultados: ["1m 34s.657ms", "1s.245ms" o "135ms"]
+     * el valor en una cadena de texto similar a los siguientes resultados: ["1m 34s 657ms", "1s 245ms" o "135ms"]
      *
      * @return Duración calculada del proceso.
      */
@@ -74,13 +73,16 @@ public class FlowWeaverContext {
 
         long totalMillis = duration.toMillis();
 
-//        long hours = totalMillis / (1000 * 60 * 60);
         long minutes = (totalMillis / (1000 * 60)) % 60;
         long seconds = (totalMillis / 1000) % 60;
         long millis = totalMillis % 1000;
 
-//        return String.format("%dh %dm %ds.%dml", hours, minutes, seconds, millis);
-        return String.format("%dm %ds.%dml", minutes, seconds, millis);
-
+        if (minutes > 0) {
+            return String.format("%dm %ds %dms", minutes, seconds, millis);
+        } else if (seconds > 0) {
+            return String.format("%ds %dms", seconds, millis);
+        } else {
+            return String.format("%dms", millis);
+        }
     }
 }

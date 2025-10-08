@@ -1,19 +1,19 @@
 package mx.bastekor.flowweaver.aspect;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import mx.bastekor.flowweaver.annotation.AuditTrail;
-import mx.bastekor.flowweaver.context.FlowWeaverContextHolder;
-import mx.bastekor.flowweaver.enums.StatusEnum;
+import java.time.Instant;
+
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-
-import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.FLOW_WEAVER_CONTEXT_ID;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import mx.bastekor.flowweaver.annotation.AuditTrail;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_ENTRY;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_EXIT;
+import mx.bastekor.flowweaver.context.FlowWeaverContextHolder;
+import mx.bastekor.flowweaver.enums.StatusEnum;
 
 @Slf4j
 @Aspect
@@ -24,9 +24,7 @@ public class AuditTrailAspect {
     @Around("@annotation(auditTrail)")
     public Object around(ProceedingJoinPoint joinPoint, AuditTrail auditTrail) throws Throwable {
         Instant start = Instant.now();
-        FlowWeaverContextHolder.initOrReuse();
-        String flowId = FlowWeaverContextHolder.getFlowId();
-        MDC.put(FLOW_WEAVER_CONTEXT_ID, flowId);
+        String flowId = FlowWeaverContextHolder.initContextAndMDC();
 
         StatusEnum status = null;
         Object output = null;
@@ -34,7 +32,7 @@ public class AuditTrailAspect {
 
         try {
             status = StatusEnum.SUCCESS;
-            log.info("[{}] AuditTrail - Entrada - {}", flowId, auditTrail.operationCode());
+            log.info("[{}] {} {}", flowId, AUDIT_TRAIL_ENTRY, auditTrail.operationCode());
             output = joinPoint.proceed();
             return output;
         } catch (Throwable throwable) {
@@ -43,7 +41,7 @@ public class AuditTrailAspect {
             throw throwable;
         } finally {
             Instant end = Instant.now();
-            log.info("[{}] AuditTrail - Salida-{} - {}", flowId, status.name(), auditTrail.operationCode());
+            log.info("[{}] {} - {}", flowId, AUDIT_TRAIL_EXIT, auditTrail.operationCode());
             FlowWeaverContextHolder.release();
         }
     }

@@ -1,34 +1,42 @@
 package mx.bastekor.flowweaver.aspect;
 
-import jakarta.annotation.Nullable;
-import lombok.extern.slf4j.Slf4j;
-import mx.bastekor.flowweaver.annotation.BusinessLog;
-import mx.bastekor.flowweaver.service.BusinessLogAspectService;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.reflect.MethodSignature;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.lang.NonNull;
-
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-import static mx.bastekor.flowweaver.enums.Mode.DYNAMIC;
-import static mx.bastekor.flowweaver.enums.Mode.MERGED;
-import static mx.bastekor.flowweaver.enums.Mode.STATIC;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.reflect.MethodSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.MDC;
+import org.springframework.lang.NonNull;
+
+import jakarta.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
+import mx.bastekor.flowweaver.annotation.BusinessLog;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.FLOW_WEAVER_CONTEXT_ID;
+import mx.bastekor.flowweaver.context.FlowWeaverContextHolder;
+import static mx.bastekor.flowweaver.enums.Mode.DYNAMIC;
+import static mx.bastekor.flowweaver.enums.Mode.MERGED;
+import static mx.bastekor.flowweaver.enums.Mode.STATIC;
+import mx.bastekor.flowweaver.service.BusinessLogAspectService;
 
 @Slf4j
 @ExtendWith(MockitoExtension.class)
@@ -151,6 +159,100 @@ class BusinessLogAspectTest {
         when(joinPoint.getArgs()).thenReturn(new Object[]{1, "Hola", List.of("3", "4")});
         when(joinPoint.proceed()).thenThrow(new RuntimeException("Test Bitacora Error"));
         assertThrows(RuntimeException.class, () -> aspect.around(joinPoint, annotation));
+    }
+
+    @Test
+    void testEnqueueFailureAndRetry() throws Throwable {
+        // Arrange
+        Method method = TestComponent.class.getMethod("doSomething001");
+        BusinessLog annotation = this.getBusinessLogAnnotation(method);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.proceed()).thenReturn("OK");
+
+        // Mock enqueue to throw exception on first call, succeed on the second
+        Mockito.doThrow(new RuntimeException("Enqueue failed"))
+            .doNothing()
+            .when(businessLogAspectService).enqueue(any());
+
+        // Act
+        Object result = aspect.around(joinPoint, annotation);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("OK", result);
+        verify(businessLogAspectService, times(2)).enqueue(any()); // Original and retry
+    }
+
+    @Test
+    void testEnqueueAndRetryBothFail() throws Throwable {
+        // Arrange
+        Method method = TestComponent.class.getMethod("doSomething001");
+        BusinessLog annotation = this.getBusinessLogAnnotation(method);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.proceed()).thenReturn("OK");
+
+        // Mock enqueue to always throw an exception
+        Mockito.doThrow(new RuntimeException("Enqueue failed"))
+            .when(businessLogAspectService).enqueue(any());
+
+        // Act
+        Object result = aspect.around(joinPoint, annotation);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("OK", result);
+        verify(businessLogAspectService, times(2)).enqueue(any()); // Original and retry
+    }
+
+    @Test
+    void testConcurrency() throws Throwable {
+        // Arrange
+        Method method = TestComponent.class.getMethod("doSomething004", int.class, String.class, List.class);
+        BusinessLog annotation = this.getBusinessLogAnnotation(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{1, "Hola", List.of("3", "4")});
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.proceed()).thenReturn(null);
+
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+        int numberOfTasks = 20;
+
+        // Act
+        for (int i = 0; i < numberOfTasks; i++) {
+            executor.submit(() -> {
+                try {
+                    Object result = aspect.around(joinPoint, annotation);
+                    assertNull(result);
+                } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        executor.shutdown();
+        boolean finished = executor.awaitTermination(10, TimeUnit.SECONDS);
+
+        // Assert
+        assertTrue(finished, "All tasks should complete without timeout");
+        verify(businessLogAspectService, times(numberOfTasks)).enqueue(any());
+    }
+
+    @Test
+    void testMDCAndContextCleanup() throws Throwable {
+        // Arrange
+        Method method = TestComponent.class.getMethod("doSomething001");
+        BusinessLog annotation = this.getBusinessLogAnnotation(method);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.proceed()).thenReturn("OK");
+
+        // Act
+        Object result = aspect.around(joinPoint, annotation);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("OK", result);
+        assertNull(MDC.get(FLOW_WEAVER_CONTEXT_ID), "MDC should be cleaned up");
+        assertNull(FlowWeaverContextHolder.get(), "Context should be released");
+        verify(businessLogAspectService, times(1)).enqueue(any());
     }
 
     private BusinessLog getBusinessLogAnnotation(Method method) {

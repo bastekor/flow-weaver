@@ -1,17 +1,17 @@
 package mx.bastekor.flowweaver.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import mx.bastekor.flowweaver.config.BusinessLogConfig;
-import mx.bastekor.flowweaver.dto.RequestDTO;
-import mx.bastekor.flowweaver.enums.StatusEnum;
-import mx.bastekor.flowweaver.model.BusinessLogEvent;
 import org.slf4j.MDC;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import mx.bastekor.flowweaver.config.BusinessLogConfig;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.FLOW_WEAVER_CONTEXT_ID;
+import mx.bastekor.flowweaver.dto.RequestDTO;
+import mx.bastekor.flowweaver.enums.StatusEnum;
+import mx.bastekor.flowweaver.model.BusinessLogEvent;
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.fillAppInfo;
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.fillInfrastructureInfo;
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.getHostNameAndIpAddress;
@@ -44,9 +44,10 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
     public void processBusinessLog(BusinessLogEvent businessLogEvent, StatusEnum status) {
         MDC.put(FLOW_WEAVER_CONTEXT_ID, businessLogEvent.getFlowWeaverContextId());
         if (status == StatusEnum.SUCCESS) {
-
+            log.info("BusinessLog processed successfully for flowId: {}", businessLogEvent.getFlowWeaverContextId());
         } else {
             // FAILURE, ERROR, EXCEPTION
+            log.error("BusinessLog processing failed for flowId: {} with status: {}", businessLogEvent.getFlowWeaverContextId(), status);
         }
     }
 

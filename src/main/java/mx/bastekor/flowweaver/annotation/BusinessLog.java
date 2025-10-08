@@ -1,12 +1,12 @@
 package mx.bastekor.flowweaver.annotation;
 
-import mx.bastekor.flowweaver.enums.Mode;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import mx.bastekor.flowweaver.enums.Mode;
 
 /**
  * Anotación para registrar información de trazabilidad funcional (bitácora de negocio) durante la ejecución de un método.
@@ -134,12 +134,12 @@ public @interface BusinessLog {
      * o uno dinámico (con extracción de datos en tiempo de ejecución).
      * <p>
      * Opciones:
-     * <lo>
+     * <ul>
      * <li><b>STATIC (default)</b>: Se usa lo definido tal cual en la anotación o configuración.</li>
      * <li><b>DYNAMIC</b>: Se permite extracción en tiempo de ejecución desde los argumentos y el resultado
      * mediante datos de configuración.</li>
      * <li><b>MERGED</b>: Combina ambos enfoques (usualmente se da preferencia al dinámico si se resuelve).</li>
-     * </lo>
+     * </ul>
      */
     Mode mode() default Mode.STATIC;
 
