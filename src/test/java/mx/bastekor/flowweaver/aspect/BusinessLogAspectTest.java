@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -36,7 +37,9 @@ import mx.bastekor.flowweaver.context.FlowWeaverContextHolder;
 import static mx.bastekor.flowweaver.enums.Mode.DYNAMIC;
 import static mx.bastekor.flowweaver.enums.Mode.MERGED;
 import static mx.bastekor.flowweaver.enums.Mode.STATIC;
-import mx.bastekor.flowweaver.service.BusinessLogAspectService;
+import mx.bastekor.flowweaver.enums.StatusEnum;
+import mx.bastekor.flowweaver.model.BusinessLogEvent;
+import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
 
 @Slf4j
 @ExtendWith(MockitoExtension.class)
@@ -49,7 +52,7 @@ class BusinessLogAspectTest {
     private MethodSignature methodSignature;
 
     @Mock
-    private BusinessLogAspectService businessLogAspectService;
+    private IBusinessLogAspectService businessLogAspectService;
 
     @InjectMocks
     private BusinessLogAspect aspect;
@@ -57,7 +60,7 @@ class BusinessLogAspectTest {
     @BeforeEach
     void setUp() {
         when(joinPoint.getSignature()).thenReturn(methodSignature);
-
+        FlowWeaverContextHolder.clear(); // Ensure clean context for each test
     }
 
     @Test
@@ -81,7 +84,7 @@ class BusinessLogAspectTest {
         assertNotNull(result);
         assertEquals(String.class, result.getClass());
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(1)).enqueue(any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
     }
 
     @Test
@@ -103,7 +106,7 @@ class BusinessLogAspectTest {
         when(joinPoint.proceed()).thenReturn(null);
         Object result = aspect.around(joinPoint, annotation);
         assertNull(result);
-        verify(businessLogAspectService, times(1)).enqueue(any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
     }
 
     @Test
@@ -126,6 +129,7 @@ class BusinessLogAspectTest {
         Object result = aspect.around(joinPoint, annotation);
         assertEquals(String.class, result.getClass());
         assertEquals("OK", result);
+        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
     }
 
     @Test
@@ -148,6 +152,7 @@ class BusinessLogAspectTest {
         when(joinPoint.proceed()).thenReturn(null);
         Object result = aspect.around(joinPoint, annotation);
         assertNull(result);
+        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
     }
 
     @Test
@@ -169,18 +174,13 @@ class BusinessLogAspectTest {
         when(methodSignature.getMethod()).thenReturn(method);
         when(joinPoint.proceed()).thenReturn("OK");
 
-        // Mock enqueue to throw exception on first call, succeed on the second
-        Mockito.doThrow(new RuntimeException("Enqueue failed"))
-            .doNothing()
-            .when(businessLogAspectService).enqueue(any());
-
         // Act
         Object result = aspect.around(joinPoint, annotation);
 
         // Assert
         assertNotNull(result);
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(2)).enqueue(any()); // Original and retry
+        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
     }
 
     @Test
@@ -191,17 +191,13 @@ class BusinessLogAspectTest {
         when(methodSignature.getMethod()).thenReturn(method);
         when(joinPoint.proceed()).thenReturn("OK");
 
-        // Mock enqueue to always throw an exception
-        Mockito.doThrow(new RuntimeException("Enqueue failed"))
-            .when(businessLogAspectService).enqueue(any());
+        // Mock processBusinessLog to always throw
+        Mockito.doThrow(new RuntimeException("Process failed"))
+            .when(businessLogAspectService).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
 
-        // Act
-        Object result = aspect.around(joinPoint, annotation);
-
-        // Assert
-        assertNotNull(result);
-        assertEquals("OK", result);
-        verify(businessLogAspectService, times(2)).enqueue(any()); // Original and retry
+        // Act & Assert
+        assertThrows(RuntimeException.class, () -> aspect.around(joinPoint, annotation));
+        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
     }
 
     @Test
@@ -233,7 +229,7 @@ class BusinessLogAspectTest {
 
         // Assert
         assertTrue(finished, "All tasks should complete without timeout");
-        verify(businessLogAspectService, times(numberOfTasks)).enqueue(any());
+        verify(businessLogAspectService, times(numberOfTasks)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
     }
 
     @Test
@@ -252,7 +248,7 @@ class BusinessLogAspectTest {
         assertEquals("OK", result);
         assertNull(MDC.get(FLOW_WEAVER_CONTEXT_ID), "MDC should be cleaned up");
         assertNull(FlowWeaverContextHolder.get(), "Context should be released");
-        verify(businessLogAspectService, times(1)).enqueue(any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
     }
 
     private BusinessLog getBusinessLogAnnotation(Method method) {
