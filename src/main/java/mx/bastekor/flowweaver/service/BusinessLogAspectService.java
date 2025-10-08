@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.config.BusinessLogConfig;
 import mx.bastekor.flowweaver.dto.RequestDTO;
+import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.model.BusinessLogEvent;
 import org.slf4j.MDC;
 import org.springframework.core.env.Environment;
@@ -39,7 +40,17 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
         final RequestDTO requestDTO = this.createRequestDTO(businessLogEvent);
     }
 
-    
+    @Override
+    public void processBusinessLog(BusinessLogEvent businessLogEvent, StatusEnum status) {
+        MDC.put(FLOW_WEAVER_CONTEXT_ID, businessLogEvent.getFlowWeaverContextId());
+        if (status == StatusEnum.SUCCESS) {
+
+        } else {
+            // FAILURE, ERROR, EXCEPTION
+        }
+    }
+
+
     /**
      * Crea y prepara un objeto RequestDTO a partir de la información contenida en un BusinessLogEvent.
      * Este método mapea los metadatos del flujo (id del contexto, flowCode, status y mode) y enriquece

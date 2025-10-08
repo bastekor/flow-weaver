@@ -56,15 +56,17 @@ public class BusinessLogAspect {
             BusinessLogEvent event = buildBusinessLogEvent(joinPoint, businessLog, status, output, exception);
             try {
                 businessLogAspectService.enqueue(event);
-                release();
             } catch (Exception e) {
                 status = ERROR;
                 // Error de mi lógica, no debe afectar el flujo normal.
                 log.error("BusinessLog error ID :: [{}|{}], MSG: {}", status, flowId, e.getMessage(), e);
                 // mandemos solo aquello que es posible que se pueda mandar.
-                release();
             }
-            log.info("===== End interceptor for BusinessLog ===== ");
+            finally {
+                release(); // terminar este "hilo de flujo."
+                MDC.remove(FLOW_WEAVER_CONTEXT_ID);
+            }
+            log.info("===== End interceptor for BusinessLog ({}) ===== ", status);
         }
     }
 }
