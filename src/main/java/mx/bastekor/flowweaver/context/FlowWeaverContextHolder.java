@@ -2,10 +2,6 @@ package mx.bastekor.flowweaver.context;
 
 import java.util.UUID;
 
-import org.slf4j.MDC;
-
-import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.FLOW_WEAVER_CONTEXT_ID;
-
 /**
  * Clase para manejar el contexto de flujo (FlowWeaverContext) utilizando un ThreadLocal.
  * Permite inicializar, reutilizar y liberar el contexto en el mismo hilo,
@@ -107,17 +103,5 @@ public class FlowWeaverContextHolder {
      */
     public static void clear() {
         context.remove();
-    }
-
-    /**
-     * Inicializa o reutiliza el contexto y configura el MDC con el flowId.
-     *
-     * @return El flowId del contexto.
-     */
-    public static String initContextAndMDC() {
-        initOrReuse();
-        String flowId = getFlowId();
-        MDC.put(FLOW_WEAVER_CONTEXT_ID, flowId);
-        return flowId;
     }
 }

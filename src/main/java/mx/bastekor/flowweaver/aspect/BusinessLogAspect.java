@@ -32,7 +32,8 @@ public class BusinessLogAspect {
 
     @Around("@annotation(businessLog)")
     public Object around(ProceedingJoinPoint joinPoint, BusinessLog businessLog) throws Throwable {
-        String flowId = FlowWeaverContextHolder.initContextAndMDC();
+        FlowWeaverContextHolder.initOrReuse();
+        String flowId = FlowWeaverContextHolder.getFlowId();
         log.info(BUSINESS_LOG_START);
         log.debug(BUSINESS_LOG_DEBUG_START, flowId);
 
