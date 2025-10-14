@@ -11,8 +11,6 @@ public class FlowWeaverConstants {
     // BusinessLog Aspect Messages
     public static final String BUSINESS_LOG_START = "===== Start interceptor for BusinessLog ===== ";
     public static final String BUSINESS_LOG_END = "===== End interceptor for BusinessLog ({}) ===== ";
-    public static final String BUSINESS_LOG_DEBUG_START = "s_BusinessLog ID :: [{}]";
-    public static final String BUSINESS_LOG_DEBUG_END = "e_BusinessLog ID :: [{}|{}]";
     public static final String BUSINESS_LOG_ERROR = "BusinessLog error ID :: [{}|{}], MSG: {}";
     public static final String BUSINESS_LOG_RETRY_ERROR = "Failed to retry enqueue with {} status: {}";
 

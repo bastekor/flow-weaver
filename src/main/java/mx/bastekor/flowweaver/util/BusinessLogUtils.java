@@ -4,10 +4,10 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
-import mx.bastekor.flowweaver.context.FlowWeaverContextHolder;
 import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.model.Argument;
+import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.model.BusinessLogEvent;
 import mx.bastekor.flowweaver.model.MethodContext;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -39,16 +39,18 @@ public final class BusinessLogUtils {
      * @param status      Enum con el valor del resultado (SUCCESS | FAILURE).
      * @param output      Valor del resultado del método interceptado (puede ser nulo si es que hubo excepción).
      * @param exception   Excepción interceptada (puede ser nulo si es que todo funciono bien).
+     * @param businessLogContainer Objeto BusinessLogContainer
      * @return Objeto {@link BusinessLogEvent} con los datos recuperados del interceptor.
      */
     public static BusinessLogEvent buildBusinessLogEvent(ProceedingJoinPoint joinPoint,
                                                          BusinessLog businessLog,
                                                          StatusEnum status,
                                                          Object output,
-                                                         Throwable exception) {
+                                                         Throwable exception,
+                                                         BusinessLogContainer businessLogContainer) {
         final BusinessLogEvent businessLogEvent = new BusinessLogEvent();
-        businessLogEvent.setFlowWeaverContextId(FlowWeaverContextHolder.getFlowId());
-        businessLogEvent.setDuration(FlowWeaverContextHolder.getDuration()); // Tiempo que tardo el proceso...
+        businessLogEvent.setFlowWeaverContextId(businessLogContainer.getFlowId());
+        businessLogEvent.setDuration(businessLogEvent.getDuration()); // Tiempo que tardo el proceso...
         businessLogEvent.setMethodContext(createMethodContext(joinPoint, output, exception)); // Contexto del método interceptado...
         businessLogEvent.setBusinessLogDTO(createBusinessLogDTO(businessLog)); // Transformación de la anotación a objeto
         businessLogEvent.setStatus(status); // Estatus que representa si termino correctamente o con error

@@ -84,7 +84,7 @@ public @interface AuditTrail {
      * Código de operación relacionado del contexto {@code @BusinessLog}, si aplica.
      * Permite establecer trazabilidad cruzada entre ambos mecanismos.
      */
-    String relatedBusinessCode() default "";
+    String flowCode() default "";
 
     /**
      * Código del flujo funcional (operationCode) proporcionado por negocio.
