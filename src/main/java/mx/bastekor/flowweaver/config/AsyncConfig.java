@@ -57,7 +57,7 @@ public class AsyncConfig {
 
                 } finally {
                     // Limpiar el contexto del thread async después de ejecutar
-                    FlowWeaverContext.clearCurrentThread();
+                    FlowWeaverContext.clearCurrentThreadContainer();
                 }
             };
         }

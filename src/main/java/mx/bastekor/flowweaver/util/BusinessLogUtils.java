@@ -211,11 +211,11 @@ public final class BusinessLogUtils {
      * @param businessLogEvent Objeto llenado a partir del interceptor {@link BusinessLog}
      */
     private static void generateFlowCode(BusinessLogEvent businessLogEvent) {
-        if (isBlank(businessLogEvent.getBusinessLogDTO().getFlowCode())) {
+        if (isBlank(businessLogEvent.getBusinessLogDTO().getOperationCode())) {
             final String flowCode = businessLogEvent.getMethodContext().getClassName() +
                     "#" +
                     businessLogEvent.getMethodContext().getMethodName();
-            businessLogEvent.getBusinessLogDTO().setFlowCode(flowCode);
+            businessLogEvent.getBusinessLogDTO().setOperationCode(flowCode);
         }
     }
 

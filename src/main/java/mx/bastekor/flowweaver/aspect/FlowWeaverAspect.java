@@ -5,13 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.context.FlowWeaverContext;
+import mx.bastekor.flowweaver.dto.AuditTrailDTO;
+import mx.bastekor.flowweaver.dto.BusinessLogDTO;
 import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.model.BusinessLogEvent;
-import mx.bastekor.flowweaver.model.ThreadContainer;
 import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
-import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -22,12 +22,12 @@ import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_EN
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_START;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_END;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_START;
-import static mx.bastekor.flowweaver.context.FlowWeaverContext.existBusinessLogContainerInCurrentThread;
-import static mx.bastekor.flowweaver.context.FlowWeaverContext.getBusinessLogContainerInCurrentThread;
-import static mx.bastekor.flowweaver.context.FlowWeaverContext.getCurrentThreadContainer;
-import static mx.bastekor.flowweaver.context.FlowWeaverContext.setBusinessLogContainerInCurrentThread;
+import static mx.bastekor.flowweaver.context.FlowWeaverContext.assignBusinessLogContainer;
+import static mx.bastekor.flowweaver.context.FlowWeaverContext.clearBusinessLogContainer;
 import static mx.bastekor.flowweaver.enums.StatusEnum.FAILURE;
 import static mx.bastekor.flowweaver.enums.StatusEnum.SUCCESS;
+import static mx.bastekor.flowweaver.mapper.AuditTrailMapper.createAuditTrailDTO;
+import static mx.bastekor.flowweaver.mapper.BusinessLogMapper.createBusinessLogDTO;
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.buildBusinessLogEvent;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -39,8 +39,8 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 @RequiredArgsConstructor
 public class FlowWeaverAspect {
 
-    private static final String BUSINESS_LOG_PREFIX = "BL";
-    private static final String AUDIT_TRAIL_PREFIX = "AT";
+    private static final String BUSINESS_LOG_PREFIX = "BL#";
+    private static final String AUDIT_TRAIL_PREFIX = "AT#";
 
     private final IBusinessLogAspectService businessLogAspectService;
 
@@ -52,11 +52,11 @@ public class FlowWeaverAspect {
     public Object aroundBusinessLog(ProceedingJoinPoint joinPoint, BusinessLog businessLog) throws Throwable {
 
         log.info(BUSINESS_LOG_START);
-        BusinessLogContainer businessLogContainer = this.createOrRetrieveBusinessLogContainer(businessLog.operationCode());
-        log.debug("🏁 [BusinessLog START] [{}|{}] | Thread: {}",
-                businessLogContainer.getOperationCode(),
-                businessLogContainer.getFlowId(),
-                Thread.currentThread().getName());
+
+        final BusinessLogDTO businessLogDTO = createBusinessLogDTO(businessLog);
+        final BusinessLogContainer blc = assignBusinessLogContainer(businessLogDTO.getOperationCode());
+        this.printContainer(blc, 1);
+
         StatusEnum status = null;
         Object output = null;
         Throwable exception = null;
@@ -67,25 +67,26 @@ public class FlowWeaverAspect {
         } catch (Throwable throwable) {
             status = FAILURE;
             exception = throwable;
-            log.error("❌ [BusinessLog ERROR] [{}|{}] | Error: {}",
-                    businessLogContainer.getOperationCode(),
-                    businessLogContainer.getFlowId(),
-                    throwable.getMessage());
+            log.error("❌ [BusinessLog ERROR] [{}|{}] | Error: {}", blc.getFlowId(), blc.getOperationCode(), throwable.getMessage());
             throw throwable;
         } finally {
-            // Lo siguiente no debería por ninguna razón fallar ya que es la data "estática" no tratada.
-            BusinessLogEvent event = buildBusinessLogEvent(joinPoint, businessLog, status, output, exception, businessLogContainer);
-            businessLogAspectService.processBusinessLog(event, status, businessLogContainer.getFlowId());
-            log.debug("🏁 [BusinessLog END] [{}|{}] | Duration: {} | AuditTrails: {} | Thread: {}",
-                    businessLogContainer.getOperationCode(),
-                    businessLogContainer.getFlowId(),
-                    businessLogContainer.getDuration(),
-                    businessLogContainer.getAuditTrails().size(),
-                    Thread.currentThread().getName());
+//            // Lo siguiente no debería por ninguna razón fallar ya que es la data "estática" no tratada.
+            BusinessLogEvent event = buildBusinessLogEvent(joinPoint, businessLog, status, output, exception, blc);
+            /*
+            Aquí deberíamos de scar toda la información o mandar a extraer a otro lado
+             */
+
+
+
+
+
+
+            businessLogAspectService.processBusinessLog(event, status, blc.getFlowId());
+            this.printContainer(blc, 2);
             log.info(BUSINESS_LOG_END, status);
             // Eliminar BusinessLogContainer del contexto del thread y en caso de ser el último, limpiar el pool
-            FlowWeaverContext.printThreadSummary();
-            this.clearBusinessLogInCurrentThread(businessLogContainer.getOperationCode());
+            log.info("BSTK:: {}", businessLogDTO.toPipeString());
+            clearBusinessLogContainer(blc.getOperationCode());
         }
     }
 
@@ -96,28 +97,60 @@ public class FlowWeaverAspect {
     @Around("@annotation(auditTrail)")
     public Object aroundAuditTrail(ProceedingJoinPoint joinPoint, AuditTrail auditTrail) throws Throwable {
 
-        BusinessLogContainer businessLogContainer = this.createOrRetrieveBusinessLogContainer(auditTrail.flowCode());
+        final AuditTrailDTO auditTrailDTO = createAuditTrailDTO(auditTrail);
+        final BusinessLogContainer businessLogContainer = assignBusinessLogContainer(auditTrailDTO.getFlowCode());
+
         // Código del flujo "AuditTrail" que registra el flujo funcional
         String operationCode = auditTrail.operationCode();
         if (isBlank(operationCode)) {
             operationCode = generate(AUDIT_TRAIL_PREFIX);
         }
 
+        /**
+         * revisar el orden de está madre porque hasta donde recuerdo en .proceed() suelta el flujo y nos permite
+         * continuar con nuestro desma, más no se si se sigue en otro momento, creo que no porque se espera a que
+         * termine el flujo.
+         */
+
+
+
+
+
+        // Se tiene que mandar toda la mierda a obtener y procesarla para soltar lo más rápido posible el flujo.
         AuditTrailContainer auditTrailContainerIn = this.beforeAuditTrail(operationCode, businessLogContainer);
+
+        StatusEnum status = null;
+        Object output = null;
+        Throwable exception = null;
+
         try {
+            // Se tiene que mandar toda la mierda a obtener y procesarla para soltar lo más rápido posible el flujo.
             AuditTrailContainer auditTrailContainerOut =
                     this.afterAuditTrail(operationCode, auditTrailContainerIn, businessLogContainer);
-            Object result = joinPoint.proceed();
-            return result;
+            status = SUCCESS;
+            // Enviar a logs entrada antes de soltar el flujo
+            // Hay que ver como refactorizamos esto para que entre con audittrail
+            BusinessLogEvent in = buildBusinessLogEvent(joinPoint, null, status, output, exception, businessLogContainer);
+            output = joinPoint.proceed();
+            return output;
         } catch (Throwable throwable) {
+            status = FAILURE;
+            exception = throwable;
             log.error("  ❌ [AuditTrail ERROR] [{}|{}] | Duration: {} | Error: {}",
                     auditTrailContainerIn.getOperationCode(), auditTrailContainerIn.getFlowId(),
                     auditTrailContainerIn.getDuration(), throwable.getMessage());
             throw throwable;
         } finally {
-            // Único para "BusinessLogContainer" por default
+
+            // Enviar a logs salida antes de soltar el flujo
+            // Hay que ver como refactorizamos esto para que entre con audittrail
+            BusinessLogEvent out = buildBusinessLogEvent(joinPoint, null, status, output, exception, businessLogContainer);
+
+
+            // Único para "BusinessLogContainer" por default, ya que elimina al BusinessLogContainer creado
+            // temporalmente para este "huerfano".
             if (isBlank(auditTrail.flowCode())) {
-                this.clearBusinessLogInCurrentThread(businessLogContainer.getOperationCode());
+                clearBusinessLogContainer(businessLogContainer.getOperationCode());
             }
         }
     }
@@ -126,17 +159,17 @@ public class FlowWeaverAspect {
     private AuditTrailContainer beforeAuditTrail(String operationCode, BusinessLogContainer businessLogContainer) {
         log.info(AUDIT_TRAIL_START);
         // Crear AuditTrail, hijo de entrada...
-        AuditTrailContainer auditTrailContainerIn = new AuditTrailContainer(businessLogContainer.getOperationCode(), operationCode);
+        AuditTrailContainer auditTrailContainer = new AuditTrailContainer(businessLogContainer.getOperationCode(), operationCode);
         log.debug("  ▶️ [AuditTrail ENTRADA] [{}|{}] | BusinessLog: {} | Duration: {} | Thread: {}",
-                auditTrailContainerIn.getOperationCode(),
-                auditTrailContainerIn.getFlowId(),
+                auditTrailContainer.getOperationCode(),
+                auditTrailContainer.getFlowId(),
                 businessLogContainer.getOperationCode(),
-                auditTrailContainerIn.getDuration(),
+                auditTrailContainer.getDuration(),
                 Thread.currentThread().getName());
         // Registrar el AuditTrail hijo de entrada en el BusinessLog padre
-        businessLogContainer.addAuditTrail(auditTrailContainerIn);
+        businessLogContainer.addAuditTrail(auditTrailContainer);
         log.info(AUDIT_TRAIL_END);
-        return auditTrailContainerIn;
+        return auditTrailContainer;
     }
 
     private AuditTrailContainer afterAuditTrail(String operationCode,
@@ -144,65 +177,35 @@ public class FlowWeaverAspect {
                                                 BusinessLogContainer businessLogContainer) {
         log.info(AUDIT_TRAIL_START);
         // Crear AuditTrail, hijo de salida, se crea antes de soltar el flujo
-        AuditTrailContainer auditTrailContainerOut = new AuditTrailContainer(businessLogContainer.getOperationCode(), operationCode,
+        AuditTrailContainer auditTrailContainer = new AuditTrailContainer(businessLogContainer.getOperationCode(), operationCode,
                 auditTrailContainerIn.getFlowId());
         log.debug("  ◀️ [AuditTrail SALIDA] [{}|{}] | BusinessLog: {} | Duration: {} | Thread: {}",
-                auditTrailContainerOut.getOperationCode(),
-                auditTrailContainerOut.getFlowId(),
+                auditTrailContainer.getOperationCode(),
+                auditTrailContainer.getFlowId(),
                 businessLogContainer.getOperationCode(),
-                auditTrailContainerOut.getDuration(),
+                auditTrailContainer.getDuration(),
                 Thread.currentThread().getName());
         // Registrar el AuditTrail hijo de salida en el BusinessLog padre
-        businessLogContainer.addAuditTrail(auditTrailContainerOut);
+        businessLogContainer.addAuditTrail(auditTrailContainer);
         log.info(AUDIT_TRAIL_END);
-        return auditTrailContainerOut;
+        return auditTrailContainer;
     }
 
+    private void printContainer(BusinessLogContainer businessLogContainer, int input) {
 
-    private BusinessLogContainer createOrRetrieveBusinessLogContainer(String operationCode) {
-
-        BusinessLogContainer businessLogContainer = null;
-        if (isBlank(operationCode)) {
-            // Buscar BusinessLogContainer en el pool mediante PREFIX
-            ThreadContainer threadContainer = getCurrentThreadContainer(); // Si no existe se crea contexto del hilo
-            for (BusinessLogContainer businessLog : threadContainer.getBusinessLogs()) {
-                if (businessLog.getOperationCode().startsWith(BUSINESS_LOG_PREFIX)) {
-                    businessLogContainer = businessLog;
-                    // Este es el que llamaremos el padrastro...
-                    log.warn("👨 [PADRASTRO] Recuperando BusinessLog automático: [{}|{}] para AuditTrail huérfano.",
-                            businessLogContainer.getOperationCode(), businessLogContainer.getFlowId());
-                    break;
-                }
-            }
-            // Aquí entrará únicamente cuando sea nuevo, pero sin operationCode - default BL#.
-            if (businessLogContainer == null) {
-                businessLogContainer = new BusinessLogContainer(generate(BUSINESS_LOG_PREFIX));
-                // Establecer en el contexto del thread
-                setBusinessLogContainerInCurrentThread(businessLogContainer);
-            }
-        } else { // Si contiene operationCode "BusinessLog"
-            // Buscar BusinessLogContainer en el pool por su "operationCode"
-            if (existBusinessLogContainerInCurrentThread(operationCode.trim())) {
-                businessLogContainer = getBusinessLogContainerInCurrentThread(operationCode.trim());
-            } else {
-                // Aquí entra únicamente cuando sea nuevo, pero con operationCode.
-                businessLogContainer = new BusinessLogContainer(operationCode.trim());
-                // Establecer en el contexto del thread
-                setBusinessLogContainerInCurrentThread(businessLogContainer);
-            }
-        }
-        return businessLogContainer;
-    }
-
-    /**
-     * Limpiar el BusinessLog del thread actual.
-     *
-     * @param operationCode Código de la operación en proceso
-     */
-    private void clearBusinessLogInCurrentThread(final String operationCode) {
-        FlowWeaverContext.clearBusinessLogInCurrentThread(operationCode);
-        if (FlowWeaverContext.getSize() == 0) {
-            FlowWeaverContext.clearCurrentThread();
+        switch (input) {
+            case 1:
+                log.debug("🏁 [BusinessLog START] [{}|{}] | Thread: {}",
+                        businessLogContainer.getOperationCode(),
+                        businessLogContainer.getFlowId(),
+                        Thread.currentThread().getName());
+            case 2:
+                log.debug("🏁 [BusinessLog END] [{}|{}] | Duration: {} | AuditTrails: {} | Thread: {}",
+                        businessLogContainer.getOperationCode(),
+                        businessLogContainer.getFlowId(),
+                        businessLogContainer.getDuration(),
+                        businessLogContainer.getAuditTrails().size(),
+                        Thread.currentThread().getName());
         }
     }
 }

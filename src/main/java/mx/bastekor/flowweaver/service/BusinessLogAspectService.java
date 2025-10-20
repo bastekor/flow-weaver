@@ -82,7 +82,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
     private RequestDTO createRequestDTO(final BusinessLogEvent businessLogEvent) {
         final RequestDTO requestDTO = RequestDTO.builder()
                 .id(businessLogEvent.getFlowWeaverContextId())
-                .flowCode(businessLogEvent.getBusinessLogDTO().getFlowCode())
+                .flowCode(businessLogEvent.getBusinessLogDTO().getOperationCode())
                 .status(businessLogEvent.getStatus().name())
                 .mode(businessLogEvent.getBusinessLogDTO().getMode().name())
                 .build();

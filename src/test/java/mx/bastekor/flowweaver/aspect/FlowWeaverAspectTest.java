@@ -27,14 +27,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.MDC;
 import org.springframework.lang.NonNull;
 
 import jakarta.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
-import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.FLOW_WEAVER_CONTEXT_ID;
 import static mx.bastekor.flowweaver.enums.Mode.DYNAMIC;
 import static mx.bastekor.flowweaver.enums.Mode.MERGED;
 import static mx.bastekor.flowweaver.enums.Mode.STATIC;

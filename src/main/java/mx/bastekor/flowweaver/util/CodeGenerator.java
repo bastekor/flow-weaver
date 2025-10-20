@@ -195,13 +195,13 @@ public final class CodeGenerator {
     // ============================================================
 
     /**
-     * Genera código alfanumérico compacto con prefijo: <<prefijo>>XXXX-XXXX
+     * Genera código alfanumérico compacto con prefijo: (prefijo) + XXXX-XXXX
      * Versión más corta y simple
      * @param prefix Prefijo a incluir
      * @return String de 9 caracteres
      */
     public static String generate(final String prefix) {
-        return prefix + "#" + generate();
+        return prefix + generate();
     }
 
     /**

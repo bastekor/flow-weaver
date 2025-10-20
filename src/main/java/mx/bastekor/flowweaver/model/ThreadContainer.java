@@ -25,8 +25,26 @@ public class ThreadContainer {
         businessLogs.put(businessLogContainer.getOperationCode(), businessLogContainer);
     }
 
+    /**
+     * Obtiene el objeto {@link BusinessLogContainer} mediante el {@code operationCode} recibido.
+     * @param operationCode Valor por el cual se buscará el objeto.
+     * @return {@link BusinessLogContainer} si es que existe.
+     */
     public BusinessLogContainer getBusinessLogContainer(String operationCode) {
         return businessLogs.get(operationCode);
+    }
+
+    /**
+     * Método encargado de buscar el {@code BusinessLogContainer} por defecto que es el
+     * único que inicia con el {@code operationCode} por el prefijo "BL#".
+     * @return BusinessLogContainer
+     */
+    public BusinessLogContainer getBusinessLogContainerDefault() {
+        return businessLogs.values()
+                .stream()
+                .filter(bl -> bl.getOperationCode().startsWith("BL#"))
+                .findFirst()
+                .orElse(null);
     }
 
     public List<BusinessLogContainer> getBusinessLogs() {
