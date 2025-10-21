@@ -1,36 +1,43 @@
 package mx.bastekor.flowweaver.aspect;
 
+import static mx.bastekor.flowweaver.util.BusinessLogUtils.createMethodContext;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
+import mx.bastekor.flowweaver.util.BusinessLogUtils;
+import mx.bastekor.flowweaver.util.Util;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.weaver.Utils;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
-import mx.bastekor.flowweaver.context.FlowWeaverContext;
-import mx.bastekor.flowweaver.dto.AuditTrailDTO;
-import mx.bastekor.flowweaver.dto.BusinessLogDTO;
-import mx.bastekor.flowweaver.enums.StatusEnum;
-import mx.bastekor.flowweaver.model.AuditTrailContainer;
-import mx.bastekor.flowweaver.model.BusinessLogContainer;
-import mx.bastekor.flowweaver.model.BusinessLogEvent;
-import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_END;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_START;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_END;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_START;
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.assignBusinessLogContainer;
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.clearBusinessLogContainer;
+import mx.bastekor.flowweaver.dto.AuditTrailDTO;
+import mx.bastekor.flowweaver.dto.BusinessLogDTO;
+import mx.bastekor.flowweaver.enums.StatusEnum;
 import static mx.bastekor.flowweaver.enums.StatusEnum.FAILURE;
 import static mx.bastekor.flowweaver.enums.StatusEnum.SUCCESS;
 import static mx.bastekor.flowweaver.mapper.AuditTrailMapper.createAuditTrailDTO;
 import static mx.bastekor.flowweaver.mapper.BusinessLogMapper.createBusinessLogDTO;
+import mx.bastekor.flowweaver.model.AuditTrailContainer;
+import mx.bastekor.flowweaver.model.BusinessLogContainer;
+import mx.bastekor.flowweaver.model.BusinessLogEvent;
+import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
+
+import java.time.Instant;
+
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.buildBusinessLogEvent;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
-import static org.apache.commons.lang3.StringUtils.isBlank;
 
 @Slf4j
 @Aspect
@@ -53,8 +60,12 @@ public class FlowWeaverAspect {
 
         log.info(BUSINESS_LOG_START);
 
+        Instant start = Instant.now();
         final BusinessLogDTO businessLogDTO = createBusinessLogDTO(businessLog);
         final BusinessLogContainer blc = assignBusinessLogContainer(businessLogDTO.getOperationCode());
+        businessLogDTO.setOperationCode(blc.getOperationCode());
+
+
         this.printContainer(blc, 1);
 
         StatusEnum status = null;
@@ -70,23 +81,26 @@ public class FlowWeaverAspect {
             log.error("❌ [BusinessLog ERROR] [{}|{}] | Error: {}", blc.getFlowId(), blc.getOperationCode(), throwable.getMessage());
             throw throwable;
         } finally {
-//            // Lo siguiente no debería por ninguna razón fallar ya que es la data "estática" no tratada.
+
+            BusinessLogEvent businessLogEvent = new BusinessLogEvent();
+            businessLogEvent.setFlowWeaverContextId(blc.getFlowId());
+            businessLogEvent.setDuration(blc.getDuration());
+            businessLogEvent.setStatus(status);
+            businessLogEvent.setMethodContext(createMethodContext(joinPoint, output, exception));
+
+            Instant end =  Instant.now();
+            log.info("BSTK : TIME_DURATION :: {} - Object Content :: {}", Util.getDuration(start, end), businessLogEvent);
+
+// Lo siguiente no debería por ninguna razón fallar ya que es la data "estática" no tratada.
             BusinessLogEvent event = buildBusinessLogEvent(joinPoint, businessLog, status, output, exception, blc);
             /*
             Aquí deberíamos de scar toda la información o mandar a extraer a otro lado
              */
-
-
-
-
-
-
-            businessLogAspectService.processBusinessLog(event, status, blc.getFlowId());
+            businessLogAspectService.processBusinessLog(businessLogEvent);
             this.printContainer(blc, 2);
-            log.info(BUSINESS_LOG_END, status);
             // Eliminar BusinessLogContainer del contexto del thread y en caso de ser el último, limpiar el pool
-            log.info("BSTK:: {}", businessLogDTO.toPipeString());
             clearBusinessLogContainer(blc.getOperationCode());
+            log.info(BUSINESS_LOG_END, status);
         }
     }
 
@@ -199,6 +213,7 @@ public class FlowWeaverAspect {
                         businessLogContainer.getOperationCode(),
                         businessLogContainer.getFlowId(),
                         Thread.currentThread().getName());
+                break;
             case 2:
                 log.debug("🏁 [BusinessLog END] [{}|{}] | Duration: {} | AuditTrails: {} | Thread: {}",
                         businessLogContainer.getOperationCode(),
@@ -206,6 +221,7 @@ public class FlowWeaverAspect {
                         businessLogContainer.getDuration(),
                         businessLogContainer.getAuditTrails().size(),
                         Thread.currentThread().getName());
+                break;
         }
     }
 }

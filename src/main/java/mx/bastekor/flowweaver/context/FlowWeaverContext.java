@@ -1,15 +1,15 @@
 package mx.bastekor.flowweaver.context;
 
+import static java.util.Optional.ofNullable;
+
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import mx.bastekor.flowweaver.dto.AuditTrailDTO;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.model.ThreadContainer;
-
-import static java.util.Optional.ofNullable;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
-import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * Contexto para mantener el BusinessLog actual en cada thread
@@ -63,7 +63,7 @@ public final class FlowWeaverContext {
 
     public static BusinessLogContainer assignBusinessLogContainer(String operationCode) {
 
-        ThreadContainer threadContainer = CURRENT_THREAD_CONTAINER.get();
+        ThreadContainer threadContainer = getCurrentThreadContainer();
 
         BusinessLogContainer businessLogContainer;
 
@@ -84,7 +84,7 @@ public final class FlowWeaverContext {
             // Buscar BusinessLogContainer en el pool por su "operationCode", si no se encuentra creamos uno.
             businessLogContainer = ofNullable(threadContainer.getBusinessLogContainer(operationCode))
                     .orElseGet(() -> {
-                        BusinessLogContainer temp = new BusinessLogContainer(generate(operationCode));
+                        BusinessLogContainer temp = new BusinessLogContainer(operationCode);
                         addBusinessLogContainer(temp);
                         return temp;
                     });
@@ -116,7 +116,7 @@ public final class FlowWeaverContext {
      * Limpiar BusinessLog específico del thread
      */
     public static void clearBusinessLogContainer(String operationCode) {
-        ThreadContainer threadContainer = CURRENT_THREAD_CONTAINER.get();
+        ThreadContainer threadContainer = getCurrentThreadContainer();
         BusinessLogContainer businessLogContainer = threadContainer.getBusinessLogContainer(operationCode);
         if (businessLogContainer != null) {
             log.debug("🧹 BusinessLog limpiado del thread [{}]: [{}|{}]",

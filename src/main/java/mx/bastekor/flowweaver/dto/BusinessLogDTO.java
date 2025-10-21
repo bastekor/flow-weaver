@@ -33,6 +33,6 @@ public class BusinessLogDTO extends DataParamsDTO {
                 StringUtils.defaultIfBlank(this.description, this.defaultDescription) + pipe +
                 StringUtils.defaultIfBlank(this.value, this.defaultValue) +  pipe +
                 StringUtils.defaultIfBlank(this.exception, this.defaultException) +  pipe +
-                mode.toString();
+                mode.name();
     }
 }

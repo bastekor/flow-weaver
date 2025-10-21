@@ -1,44 +1,43 @@
 package mx.bastekor.flowweaver.aspect;
 
+import jakarta.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
+import mx.bastekor.flowweaver.annotation.AuditTrail;
+import mx.bastekor.flowweaver.annotation.BusinessLog;
+import mx.bastekor.flowweaver.context.FlowWeaverContext;
+import mx.bastekor.flowweaver.model.BusinessLogEvent;
+import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.lang.NonNull;
+
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static mx.bastekor.flowweaver.enums.Mode.DYNAMIC;
+import static mx.bastekor.flowweaver.enums.Mode.MERGED;
+import static mx.bastekor.flowweaver.enums.Mode.STATIC;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.reflect.MethodSignature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.lang.NonNull;
-
-import jakarta.annotation.Nullable;
-import lombok.extern.slf4j.Slf4j;
-import mx.bastekor.flowweaver.annotation.AuditTrail;
-import mx.bastekor.flowweaver.annotation.BusinessLog;
-import static mx.bastekor.flowweaver.enums.Mode.DYNAMIC;
-import static mx.bastekor.flowweaver.enums.Mode.MERGED;
-import static mx.bastekor.flowweaver.enums.Mode.STATIC;
-import mx.bastekor.flowweaver.enums.StatusEnum;
-import mx.bastekor.flowweaver.model.BusinessLogEvent;
-import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
 
 @Slf4j
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +58,8 @@ class FlowWeaverAspectTest {
     @BeforeEach
     void setUp() {
         lenient().when(joinPoint.getSignature()).thenReturn(methodSignature);
+        // Limpiar el contexto antes de cada prueba para evitar interferencias
+        FlowWeaverContext.clearCurrentThreadContainer();
     }
 
     @Test
@@ -82,7 +83,7 @@ class FlowWeaverAspectTest {
         assertNotNull(result);
         assertEquals(String.class, result.getClass());
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class));
     }
 
     @Test
@@ -105,7 +106,7 @@ class FlowWeaverAspectTest {
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertEquals(String.class, result.getClass());
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class));
     }
 
     @Test
@@ -117,7 +118,7 @@ class FlowWeaverAspectTest {
         when(joinPoint.getArgs()).thenReturn(new Object[]{1, "Hola", List.of("3", "4")});
         when(joinPoint.proceed()).thenThrow(new RuntimeException("Test Bitacora Error"));
         assertThrows(RuntimeException.class, () -> aspect.aroundBusinessLog(joinPoint, annotation));
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class));
     }
 
     @Test
@@ -138,13 +139,15 @@ class FlowWeaverAspectTest {
         assertEquals(0, annotation.dataOut().length);
         assertEquals(0, annotation.dataInOut().length);
 
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{});
         when(joinPoint.proceed()).thenReturn("Audit OK");
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertNotNull(result);
         assertEquals(String.class, result.getClass());
         assertEquals("Audit OK", result);
         // AuditTrail doesn't call processBusinessLog directly - only BusinessLog does
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
+        verify(businessLogAspectService, times(0)).processBusinessLog(any(BusinessLogEvent.class));
     }
 
     @Test
@@ -167,11 +170,12 @@ class FlowWeaverAspectTest {
 
         lenient().when(methodSignature.getMethod()).thenReturn(method);
         lenient().when(joinPoint.getTarget()).thenReturn(new TestComponent());
+        lenient().when(joinPoint.getArgs()).thenReturn(new Object[]{new String()});
         lenient().when(joinPoint.proceed()).thenReturn(null);
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertNull(result);
         // AuditTrail doesn't call processBusinessLog directly - only BusinessLog does
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
+        verify(businessLogAspectService, times(0)).processBusinessLog(any(BusinessLogEvent.class));
     }
 
     @Test
@@ -181,10 +185,11 @@ class FlowWeaverAspectTest {
         AuditTrail annotation = this.getAuditTrailAnnotation(method);
         lenient().when(methodSignature.getMethod()).thenReturn(method);
         lenient().when(joinPoint.getTarget()).thenReturn(new TestComponent());
+        lenient().when(joinPoint.getArgs()).thenReturn(new Object[]{});
         lenient().when(joinPoint.proceed()).thenThrow(new RuntimeException("Audit Error"));
         assertThrows(RuntimeException.class, () -> aspect.aroundAuditTrail(joinPoint, annotation));
         // AuditTrail doesn't call processBusinessLog directly - only BusinessLog does
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
+        verify(businessLogAspectService, times(0)).processBusinessLog(any(BusinessLogEvent.class));
     }
 
     @Test
@@ -216,7 +221,7 @@ class FlowWeaverAspectTest {
 
         // Assert
         assertTrue(finished, "All tasks should complete without timeout");
-        verify(businessLogAspectService, times(numberOfTasks)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
+        verify(businessLogAspectService, times(numberOfTasks)).processBusinessLog(any(BusinessLogEvent.class));
     }
 
     @Test
@@ -226,6 +231,7 @@ class FlowWeaverAspectTest {
         AuditTrail annotation = this.getAuditTrailAnnotation(method);
         lenient().when(methodSignature.getMethod()).thenReturn(method);
         lenient().when(joinPoint.getTarget()).thenReturn(new TestComponent());
+        lenient().when(joinPoint.getArgs()).thenReturn(new Object[]{});
         lenient().when(joinPoint.proceed()).thenReturn("OK");
 
         ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -249,7 +255,7 @@ class FlowWeaverAspectTest {
         // Assert
         assertTrue(finished, "All tasks should complete without timeout");
         // AuditTrail doesn't call processBusinessLog directly - only BusinessLog does
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
+        verify(businessLogAspectService, times(0)).processBusinessLog(any(BusinessLogEvent.class));
     }
 
     @Test
@@ -262,11 +268,11 @@ class FlowWeaverAspectTest {
 
         // Mock processBusinessLog to always throw
         Mockito.doThrow(new RuntimeException("Process failed"))
-            .when(businessLogAspectService).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
+                .when(businessLogAspectService).processBusinessLog(any(BusinessLogEvent.class));
 
         // Act & Assert
         assertThrows(RuntimeException.class, () -> aspect.aroundBusinessLog(joinPoint, annotation));
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any(BusinessLogEvent.class));
     }
 
     @Test
@@ -276,6 +282,7 @@ class FlowWeaverAspectTest {
         AuditTrail annotation = this.getAuditTrailAnnotation(method);
         lenient().when(methodSignature.getMethod()).thenReturn(method);
         lenient().when(joinPoint.getTarget()).thenReturn(new TestComponent());
+        lenient().when(joinPoint.getArgs()).thenReturn(new Object[]{});
         lenient().when(joinPoint.proceed()).thenReturn("OK");
 
         // Act & Assert - AuditTrail doesn't call processBusinessLog, so no exception should be thrown
@@ -283,7 +290,7 @@ class FlowWeaverAspectTest {
         assertNotNull(result);
         assertEquals("OK", result);
         // AuditTrail doesn't call processBusinessLog directly - only BusinessLog does
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(BusinessLogEvent.class), any(StatusEnum.class), anyString());
+        verify(businessLogAspectService, times(0)).processBusinessLog(any(BusinessLogEvent.class));
     }
 
     private BusinessLog getBusinessLogAnnotation(Method method) {

@@ -1,19 +1,5 @@
 package mx.bastekor.flowweaver.util;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import mx.bastekor.flowweaver.annotation.BusinessLog;
-import mx.bastekor.flowweaver.dto.RequestDTO;
-import mx.bastekor.flowweaver.enums.StatusEnum;
-import mx.bastekor.flowweaver.model.Argument;
-import mx.bastekor.flowweaver.model.BusinessLogContainer;
-import mx.bastekor.flowweaver.model.BusinessLogEvent;
-import mx.bastekor.flowweaver.model.MethodContext;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.core.env.Environment;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -21,9 +7,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static mx.bastekor.flowweaver.mapper.BusinessLogMapper.createBusinessLogDTO;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.core.env.Environment;
+
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import mx.bastekor.flowweaver.annotation.BusinessLog;
+import mx.bastekor.flowweaver.dto.RequestDTO;
+import mx.bastekor.flowweaver.enums.StatusEnum;
+import static mx.bastekor.flowweaver.mapper.BusinessLogMapper.createBusinessLogDTO;
+import mx.bastekor.flowweaver.model.Argument;
+import mx.bastekor.flowweaver.model.BusinessLogContainer;
+import mx.bastekor.flowweaver.model.BusinessLogEvent;
+import mx.bastekor.flowweaver.model.MethodContext;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -43,16 +43,18 @@ public final class BusinessLogUtils {
      * @return Objeto {@link BusinessLogEvent} con los datos recuperados del interceptor.
      */
     public static BusinessLogEvent buildBusinessLogEvent(ProceedingJoinPoint joinPoint,
-                                                         BusinessLog businessLog,
-                                                         StatusEnum status,
-                                                         Object output,
-                                                         Throwable exception,
-                                                         BusinessLogContainer businessLogContainer) {
+                                                          BusinessLog businessLog,
+                                                          StatusEnum status,
+                                                          Object output,
+                                                          Throwable exception,
+                                                          BusinessLogContainer businessLogContainer) {
         final BusinessLogEvent businessLogEvent = new BusinessLogEvent();
         businessLogEvent.setFlowWeaverContextId(businessLogContainer.getFlowId());
         businessLogEvent.setDuration(businessLogEvent.getDuration()); // Tiempo que tardo el proceso...
         businessLogEvent.setMethodContext(createMethodContext(joinPoint, output, exception)); // Contexto del método interceptado...
-        businessLogEvent.setBusinessLogDTO(createBusinessLogDTO(businessLog)); // Transformación de la anotación a objeto
+        if (businessLog != null) {
+            businessLogEvent.setBusinessLogDTO(createBusinessLogDTO(businessLog)); // Transformación de la anotación a objeto
+        }
         businessLogEvent.setStatus(status); // Estatus que representa si termino correctamente o con error
         generateFlowCode(businessLogEvent); // Se valida el "flowCode" y se genera si es que no lo tiene.
         return businessLogEvent;
@@ -192,7 +194,7 @@ public final class BusinessLogUtils {
      * @param exception Excepción lanza en el método.
      * @return objeto {@link MethodContext}.
      */
-    private static MethodContext createMethodContext(ProceedingJoinPoint joinPoint, Object output, Throwable exception) {
+    public static MethodContext createMethodContext(ProceedingJoinPoint joinPoint, Object output, Throwable exception) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
         return new MethodContext()
@@ -211,7 +213,7 @@ public final class BusinessLogUtils {
      * @param businessLogEvent Objeto llenado a partir del interceptor {@link BusinessLog}
      */
     private static void generateFlowCode(BusinessLogEvent businessLogEvent) {
-        if (isBlank(businessLogEvent.getBusinessLogDTO().getOperationCode())) {
+        if (businessLogEvent.getBusinessLogDTO() != null && isBlank(businessLogEvent.getBusinessLogDTO().getOperationCode())) {
             final String flowCode = businessLogEvent.getMethodContext().getClassName() +
                     "#" +
                     businessLogEvent.getMethodContext().getMethodName();

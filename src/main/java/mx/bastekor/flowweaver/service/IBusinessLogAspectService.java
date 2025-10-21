@@ -5,5 +5,5 @@ import mx.bastekor.flowweaver.model.BusinessLogEvent;
 
 public interface IBusinessLogAspectService {
 
-    void processBusinessLog(BusinessLogEvent businessLogEvent, StatusEnum status, String flowId);
+    void processBusinessLog(BusinessLogEvent businessLogEvent);
 }

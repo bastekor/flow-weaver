@@ -35,8 +35,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
 
     @Override
     @Async("flowWeaverExecutor")
-    public void processBusinessLog(final BusinessLogEvent businessLogEvent, final StatusEnum status, final String flowId) {
-        MDC.put(FLOW_WEAVER_CONTEXT_ID, flowId);
+    public void processBusinessLog(final BusinessLogEvent businessLogEvent) {
         final RequestDTO requestDTO = this.createRequestDTO(businessLogEvent);
         try {
             // Aquí se invoca la lógica para recuperar data dinámicamente, si algo falla (lógica de negocio o lógica de programación)
@@ -57,7 +56,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
              */
             log.info("Request: {}", requestDTO);
         } catch (Exception e) {
-            log.error(BUSINESS_LOG_ERROR, status, flowId, e.getMessage(), e);
+            log.error(BUSINESS_LOG_ERROR, businessLogEvent.getStatus(), businessLogEvent.getFlowWeaverContextId(), e.getMessage(), e);
         }
     }
 
