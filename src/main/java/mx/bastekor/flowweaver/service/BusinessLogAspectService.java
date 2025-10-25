@@ -2,17 +2,34 @@ package mx.bastekor.flowweaver.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import mx.bastekor.flowweaver.annotation.AuditTrail;
+import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.config.BusinessLogConfig;
+import mx.bastekor.flowweaver.dto.AuditTrailDTO;
+import mx.bastekor.flowweaver.dto.BusinessLogDTO;
+import mx.bastekor.flowweaver.dto.DataDTO;
 import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.enums.StatusEnum;
+import mx.bastekor.flowweaver.mapper.AuditTrailMapper;
+import mx.bastekor.flowweaver.mapper.BusinessLogMapper;
+import mx.bastekor.flowweaver.model.AuditTrailContainer;
+import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.model.BusinessLogEvent;
+import mx.bastekor.flowweaver.model.MethodContext;
+import mx.bastekor.flowweaver.util.BusinessLogUtils;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.slf4j.MDC;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_ERROR;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.FLOW_WEAVER_CONTEXT_ID;
+import static mx.bastekor.flowweaver.mapper.AuditTrailMapper.createAuditTrailDTO;
+import static mx.bastekor.flowweaver.mapper.BusinessLogMapper.createBusinessLogDTO;
+import static mx.bastekor.flowweaver.util.BusinessLogUtils.createMethodContext;
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.fillAppInfo;
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.fillInfrastructureInfo;
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.getHostNameAndIpAddress;
@@ -35,8 +52,37 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
 
     @Override
     @Async("flowWeaverExecutor")
-    public void processBusinessLog(final BusinessLogEvent businessLogEvent) {
-        final RequestDTO requestDTO = this.createRequestDTO(businessLogEvent);
+    public void processBusinessLog(BusinessLog businessLog,
+                                   ProceedingJoinPoint joinPoint,
+                                   StatusEnum statusEnum,
+                                   Object response,
+                                   Throwable exception,
+                                   BusinessLogContainer businessLogContainer) {
+        // Dejar siempre al principio marcando el fin del proceso del método anotado con @BusinessLog.
+        final String methodDuration = businessLogContainer.getDuration();
+        final Instant start = Instant.now();
+
+        final String flowWeaverContextId = businessLogContainer.getFlowId();
+
+        final BusinessLogDTO businessLogDTO = createBusinessLogDTO(businessLog);
+        businessLogDTO.setOperationCode(businessLogContainer.getOperationCode());
+
+        final MethodContext methodContext = createMethodContext(joinPoint, response, exception);
+
+
+        final RequestDTO requestDTO = RequestDTO.builder()
+                .id(flowWeaverContextId)
+                .flowCode(businessLogDTO.getOperationCode())
+                .status(statusEnum.name())
+                .mode(businessLogDTO.getMode().name())
+//                .data(new DataDTO()) // esto son valores reales finales
+                .build();
+
+        fillAppInfo(requestDTO, environment);
+        fillInfrastructureInfo(requestDTO, environment);
+        getHostNameAndIpAddress(requestDTO);
+        final Instant end = Instant.now();
+
         try {
             // Aquí se invoca la lógica para recuperar data dinámicamente, si algo falla (lógica de negocio o lógica de programación)
             // almacenar el tipo de error provocado, además de los pocos datos que se lograrón recuperar hasta el momento.
@@ -56,43 +102,38 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
              */
             log.info("Request: {}", requestDTO);
         } catch (Exception e) {
-            log.error(BUSINESS_LOG_ERROR, businessLogEvent.getStatus(), businessLogEvent.getFlowWeaverContextId(), e.getMessage(), e);
+            log.error(BUSINESS_LOG_ERROR, statusEnum, flowWeaverContextId, e.getMessage(), e);
         }
+
     }
 
+    @Override
+    @Async("flowWeaverExecutor")
+    public void processAuditTrailIn(AuditTrail auditTrail,
+                                    ProceedingJoinPoint joinPoint,
+                                    AuditTrailContainer auditTrailContainer) {
+        // Dejar siempre al principio marcando el fin del proceso del método anotado con @AuditTrail.
+        final String methodDuration = auditTrailContainer.getDuration();
+        final Instant start = Instant.now();
+        final AuditTrailDTO auditTrailDTO = createAuditTrailDTO(auditTrail);
+        final MethodContext methodContext = createMethodContext(joinPoint, null, null);
+        final Instant end = Instant.now();
+    }
 
-    /**
-     * Crea y prepara un objeto RequestDTO a partir de la información contenida en un BusinessLogEvent.
-     * Este método mapea los metadatos del flujo (id del contexto, flowCode, status y mode) y enriquece
-     * la petición con información de la aplicación y de la infraestructura, obtenida del Environment
-     * actual. Además, resuelve el nombre del host y la dirección IP de la máquina donde se ejecuta el servicio.
-     * </br>
-     * Detalles: </br>
-     * - fillAppInfo: agrega datos de la aplicación (nombre, versión, perfiles activos, etc.). </br>
-     * - fillInfrastructureInfo: agrega datos de infraestructura (entorno, zona, región, etc., según configuración). </br>
-     * - getHostNameAndIpAddress: determina y asigna hostname e IP del servidor. </br>
-     * <p>
-     * Nota: La descripción del evento aún no se establece porque falta la lógica para resolver valores no
-     * predeterminados; ver los comentarios dentro del método para más contexto.
-     *
-     * @param businessLogEvent evento de negocio desde el cual se construye la solicitud.
-     * @return RequestDTO construido y enriquecido, listo para su envío/serialización.
-     */
-    private RequestDTO createRequestDTO(final BusinessLogEvent businessLogEvent) {
-        final RequestDTO requestDTO = RequestDTO.builder()
-                .id(businessLogEvent.getFlowWeaverContextId())
-                .flowCode(businessLogEvent.getBusinessLogDTO().getOperationCode())
-                .status(businessLogEvent.getStatus().name())
-                .mode(businessLogEvent.getBusinessLogDTO().getMode().name())
-                .build();
-        fillAppInfo(requestDTO, environment);
-        fillInfrastructureInfo(requestDTO, environment);
-        getHostNameAndIpAddress(requestDTO);
+    @Override
+    @Async("flowWeaverExecutor")
+    public void processAuditTrailOut(AuditTrail auditTrail,
+                                  ProceedingJoinPoint joinPoint,
+                                  StatusEnum statusEnum,
+                                  Object response,
+                                  Throwable exception,
+                                  AuditTrailContainer auditTrailContainer) {
+        // Dejar siempre al principio marcando el fin del proceso del método anotado con @AuditTrail.
+        final String methodDuration = auditTrailContainer.getDuration();
+        final Instant start = Instant.now();
+        final AuditTrailDTO auditTrailDTO = createAuditTrailDTO(auditTrail);
+        final MethodContext methodContext = createMethodContext(joinPoint, response, exception);
+        final Instant end = Instant.now();
 
-//        final BusinessLogDTO businessLogDTO = businessLogEvent.getBusinessLogDTO();
-        // Esto aún no se puede porque falta la lógica para obtener la data según lo que no es default...
-//        final String description = getPropertyValue(businessLogDTO.getDescription(), businessLogDTO.getDefaultDescription());
-//        requestDTO.setDescription(description);
-        return requestDTO;
     }
 }

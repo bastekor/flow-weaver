@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.model.ThreadContainer;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
@@ -32,6 +33,7 @@ public final class FlowWeaverContext {
      */
     public static void setCurrentThreadContainer(ThreadContainer threadContainer) {
         CURRENT_THREAD_CONTAINER.set(threadContainer);
+        log.debug("🧵 ThreadContainer creado: {} | Thread: {}", threadContainer.getThreadId(), threadContainer.getThreadName());
     }
 
     /**
@@ -43,8 +45,7 @@ public final class FlowWeaverContext {
         ThreadContainer container = CURRENT_THREAD_CONTAINER.get();
         if (container == null) {
             container = new ThreadContainer();
-            CURRENT_THREAD_CONTAINER.set(container);
-            log.debug("🧵 ThreadContainer creado: {} | Thread: {}", container.getThreadId(), container.getThreadName());
+            setCurrentThreadContainer(container);
         }
         return container;
     }
@@ -55,8 +56,7 @@ public final class FlowWeaverContext {
     public static void clearCurrentThreadContainer() {
         ThreadContainer container = CURRENT_THREAD_CONTAINER.get();
         if (container != null) {
-            log.debug("🧹 ThreadContainer limpiado: {} | BusinessLogs: {}",
-                    container.getThreadId(), container.getBusinessLogs().size());
+            log.debug("🧹 ThreadContainer limpiado: {} | BusinessLogs: {}", container.getThreadId(), container.getAllBusinessLogContainer().size());
             CURRENT_THREAD_CONTAINER.remove();
         }
     }
@@ -74,22 +74,24 @@ public final class FlowWeaverContext {
                     .peek(blc -> log.warn("👨 [PADRASTRO] Recuperando BusinessLog automático: [{}|{}] para AuditTrail huérfano.",
                             blc.getOperationCode(), blc.getFlowId()))
                     .findFirst()
-                    .orElseGet(() -> {
-                        BusinessLogContainer temp = new BusinessLogContainer(generate(BUSINESS_LOG_PREFIX));
-                        addBusinessLogContainer(temp);
-                        return temp;
-                    });
+                    .orElse(createBusinessLogContainer(generate(BUSINESS_LOG_PREFIX)));
         } else {
             // Si contiene operationCode "BusinessLog.operationCode" o "AuditTrail.flowCode"
             // Buscar BusinessLogContainer en el pool por su "operationCode", si no se encuentra creamos uno.
             businessLogContainer = ofNullable(threadContainer.getBusinessLogContainer(operationCode))
-                    .orElseGet(() -> {
-                        BusinessLogContainer temp = new BusinessLogContainer(operationCode);
-                        addBusinessLogContainer(temp);
-                        return temp;
-                    });
+                    .orElse(createBusinessLogContainer(operationCode));
 
         }
+        return businessLogContainer;
+    }
+
+    private static BusinessLogContainer createBusinessLogContainer(final String operationCode) {
+        final BusinessLogContainer businessLogContainer = new BusinessLogContainer(operationCode);
+        log.debug("🏁 [BusinessLog START] [{}|{}] | Thread: {}",
+                businessLogContainer.getOperationCode(),
+                businessLogContainer.getFlowId(),
+                Thread.currentThread().getName());
+        addBusinessLogContainer(businessLogContainer);
         return businessLogContainer;
     }
 
@@ -119,16 +121,46 @@ public final class FlowWeaverContext {
         ThreadContainer threadContainer = getCurrentThreadContainer();
         BusinessLogContainer businessLogContainer = threadContainer.getBusinessLogContainer(operationCode);
         if (businessLogContainer != null) {
-            log.debug("🧹 BusinessLog limpiado del thread [{}]: [{}|{}]",
+            log.debug("🧹 BusinessLog limpiado del threadContainer [{}]: [{}|{}]",
                     Thread.currentThread().getName(),
                     businessLogContainer.getOperationCode(),
                     businessLogContainer.getFlowId());
             threadContainer.clearBusinessLogContainer(operationCode);
 
             // Si ya no hay BusinessLogs, limpiar el ThreadContainer completo
-            if (threadContainer.getBusinessLogs().isEmpty()) {
+            if (threadContainer.getAllBusinessLogContainer().isEmpty()) {
                 clearCurrentThreadContainer();
             }
+
+            log.debug("🏁 [BusinessLog END] [{}|{}] | Duration: {} | AuditTrails: {} | Thread: {}",
+                    businessLogContainer.getOperationCode(),
+                    businessLogContainer.getFlowId(),
+                    businessLogContainer.getDuration(),
+                    businessLogContainer.getAuditTrails().size(),
+                    Thread.currentThread().getName());
         }
+    }
+
+    public static void addAuditTrailContainer(int type,
+                                              final AuditTrailContainer auditTrailContainer,
+                                              final BusinessLogContainer businessLogContainer) {
+        if (type == 0) {
+            log.debug("  ▶️ [AuditTrail ENTRADA] [{}|{}] | BusinessLog: {} | Duration: {} | Thread: {}",
+                    auditTrailContainer.getOperationCode(),
+                    auditTrailContainer.getFlowId(),
+                    businessLogContainer.getOperationCode(),
+                    auditTrailContainer.getDuration(),
+                    Thread.currentThread().getName());
+        } else {
+            log.debug("  ◀️ [AuditTrail SALIDA] [{}|{}] | BusinessLog: {} | Duration: {} | Thread: {}",
+                    auditTrailContainer.getOperationCode(),
+                    auditTrailContainer.getFlowId(),
+                    businessLogContainer.getOperationCode(),
+                    auditTrailContainer.getDuration(),
+                    Thread.currentThread().getName());
+        }
+
+        // Registrar el AuditTrail hijo de entrada en el BusinessLog padre
+        businessLogContainer.addAuditTrail(auditTrailContainer);
     }
 }

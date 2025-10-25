@@ -21,7 +21,7 @@ public class ThreadContainer {
         this.businessLogs = new ConcurrentHashMap<>();
     }
 
-    public void addBusinessLogContainer(BusinessLogContainer businessLogContainer) {
+    public void addBusinessLogContainer(final BusinessLogContainer businessLogContainer) {
         businessLogs.put(businessLogContainer.getOperationCode(), businessLogContainer);
     }
 
@@ -30,7 +30,7 @@ public class ThreadContainer {
      * @param operationCode Valor por el cual se buscará el objeto.
      * @return {@link BusinessLogContainer} si es que existe.
      */
-    public BusinessLogContainer getBusinessLogContainer(String operationCode) {
+    public BusinessLogContainer getBusinessLogContainer(final String operationCode) {
         return businessLogs.get(operationCode);
     }
 
@@ -47,11 +47,11 @@ public class ThreadContainer {
                 .orElse(null);
     }
 
-    public List<BusinessLogContainer> getBusinessLogs() {
+    public List<BusinessLogContainer> getAllBusinessLogContainer() {
         return List.copyOf(businessLogs.values());
     }
 
-    public void clearBusinessLogContainer(String operationCode) {
+    public void clearBusinessLogContainer(final String operationCode) {
         businessLogs.remove(operationCode);
     }
 }
