@@ -11,6 +11,7 @@ import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,7 @@ import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_S
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.addAuditTrailContainer;
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.assignBusinessLogContainer;
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.clearBusinessLogContainer;
+import static mx.bastekor.flowweaver.context.FlowWeaverContext.printRecursive;
 import static mx.bastekor.flowweaver.enums.StatusEnum.FAILURE;
 import static mx.bastekor.flowweaver.enums.StatusEnum.SUCCESS;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
@@ -38,6 +40,9 @@ public class FlowWeaverAspect {
     private static final String AUDIT_TRAIL_PREFIX = "AT#";
 
     private final IBusinessLogAspectService businessLogAspectService;
+
+    @Value("${flow-weaver.debug.recursive:false}")
+    private boolean bool;
 
     /**
      * Aspecto para @BusinessLog
@@ -64,6 +69,9 @@ public class FlowWeaverAspect {
         } finally {
 
             businessLogAspectService.processBusinessLog(businessLog, joinPoint, status, response, exception, blc);
+
+            printRecursive(bool);
+
             // Eliminar BusinessLogContainer del contexto del thread.
             clearBusinessLogContainer(blc.getOperationCode());
             log.info(BUSINESS_LOG_END, status);

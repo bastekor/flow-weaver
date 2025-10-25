@@ -41,23 +41,29 @@ public class AsyncConfig {
 
         @Override
         public Runnable decorate(Runnable runnable) {
-            // Capturar el BusinessLog del thread padre ANTES de hacer async
-            ThreadContainer threadContainer = FlowWeaverContext.getCurrentThreadContainer();
+            ThreadContainer parentThreadContainer = FlowWeaverContext.getCurrentThreadContainer();
             String parentThreadName = Thread.currentThread().getName();
 
             return () -> {
                 String asyncThreadName = Thread.currentThread().getName();
 
+                // 🔹 Detectar si ya existe uno en el hijo
+                boolean contextoPrevio = FlowWeaverContext.peekThreadContainerExists();
+
                 try {
-                    // Propagar el contexto al thread hijo
-                    FlowWeaverContext.setCurrentThreadContainer(threadContainer);
-                    log.debug("🔄 Contexto propagado de [{}] a [{}]", parentThreadName, asyncThreadName);
-                    // Ejecutar la tarea async
+                    if (!contextoPrevio) {
+                        // Propagar sólo si el hijo NO tenía uno propio
+                        FlowWeaverContext.setCurrentThreadContainer(parentThreadContainer);
+                        log.debug("🔄 Contexto propagado de [{}] a [{}]", parentThreadName, asyncThreadName);
+                    }
+
                     runnable.run();
 
                 } finally {
-                    // Limpiar el contexto del thread async después de ejecutar
-                    FlowWeaverContext.clearCurrentThreadContainer();
+                    // 🔸 Solo limpiar si el hilo async NO heredó el contexto del padre
+                    if (!contextoPrevio) {
+                        FlowWeaverContext.clearCurrentThreadContainer();
+                    }
                 }
             };
         }
