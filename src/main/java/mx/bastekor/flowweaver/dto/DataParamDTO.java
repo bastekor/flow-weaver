@@ -1,4 +1,4 @@
-package mx.bastekor.flowweaver.model;
+package mx.bastekor.flowweaver.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,8 +11,8 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class DataParamsDTO {
-    private DataParamDTO[] dataIn;
-    private DataParamDTO[] dataOut;
-    private DataParamDTO[] dataInOut;
+public class DataParamDTO {
+    private String key;
+    private String value;
+    private String defaultValue;
 }

@@ -3,7 +3,7 @@ package mx.bastekor.flowweaver.config;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import mx.bastekor.flowweaver.model.BusinessLogDTO;
+import mx.bastekor.flowweaver.dto.BusinessLogDTO;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
