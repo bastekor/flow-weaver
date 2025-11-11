@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.enums.StatusEnum;
+import mx.bastekor.flowweaver.mapper.SafeSnapshotMapper;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
@@ -67,7 +68,8 @@ public class FlowWeaverAspect {
             log.error("❌ [BusinessLog ERROR] [{}|{}] | Error: {}", blc.getFlowId(), blc.getOperationCode(), throwable.getMessage());
             throw throwable;
         } finally {
-
+            final String argsToJSON = SafeSnapshotMapper.mapArgs(joinPoint, 3);
+            System.out.println("Json:: " + argsToJSON);
             businessLogAspectService.processBusinessLog(businessLog, joinPoint, status, response, exception, blc);
 
             printRecursive(bool);

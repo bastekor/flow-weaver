@@ -65,10 +65,10 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
         final String flowWeaverContextId = businessLogContainer.getFlowId();
 
         final BusinessLogDTO businessLogDTO = createBusinessLogDTO(businessLog);
+        // Se agrega operationCode en caso de que haya sido vacío desde @BusinessLog
         businessLogDTO.setOperationCode(businessLogContainer.getOperationCode());
 
         final MethodContext methodContext = createMethodContext(joinPoint, response, exception);
-
 
         final RequestDTO requestDTO = RequestDTO.builder()
                 .id(flowWeaverContextId)

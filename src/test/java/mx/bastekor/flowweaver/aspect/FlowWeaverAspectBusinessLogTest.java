@@ -61,12 +61,16 @@ class FlowWeaverAspectBusinessLogTest {
     void setUp() {
         // Limpiar el contexto antes de cada prueba para evitar interferencias
         FlowWeaverContext.clearCurrentThreadContainer();
+        when(joinPoint.getSignature()).thenReturn(methodSignature);
     }
 
     @Test
     void aroundBusinessLog_doSomething001() throws Throwable {
-        // Arrange
+
         Method method = TestComponent.class.getMethod("doSomething001");
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[0]);
+        // Arrange
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
         assertEquals(EMPTY, annotation.operationCode());
         assertEquals(EMPTY, annotation.description());
@@ -296,8 +300,10 @@ class FlowWeaverAspectBusinessLogTest {
     }
 
     @Test
-    void aroundBusinessLog_withNullArgs() throws Throwable {
+    void aroundBusinessLog_withArgs() throws Throwable {
         Method method = TestComponent.class.getMethod("doSomething002", int.class, String.class, List.class);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{1, "Test", List.of("Test1", "Test2", "Test3")});
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
 
         when(joinPoint.proceed()).thenReturn("OK");
