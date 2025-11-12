@@ -9,8 +9,15 @@ import org.aspectj.lang.ProceedingJoinPoint;
 
 public interface IBusinessLogAspectService {
 
+//    void processBusinessLog(BusinessLog businessLog,
+//                            ProceedingJoinPoint joinPoint,
+//                            StatusEnum statusEnum,
+//                            Object response,
+//                            Throwable exception,
+//                            BusinessLogContainer businessLogContainer);
+
     void processBusinessLog(BusinessLog businessLog,
-                            ProceedingJoinPoint joinPoint,
+                            String snapshot,
                             StatusEnum statusEnum,
                             Object response,
                             Throwable exception,

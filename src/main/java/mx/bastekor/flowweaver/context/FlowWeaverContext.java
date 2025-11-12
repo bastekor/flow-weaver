@@ -8,6 +8,7 @@ import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.model.ThreadContainer;
 
 import static java.util.Optional.ofNullable;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_PREFIX;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -19,8 +20,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class FlowWeaverContext {
 
-    private static final String BUSINESS_LOG_PREFIX = "BL#";
-    private static final String AUDIT_TRAIL_PREFIX = "AT#";
 
     private static final InheritableThreadLocal<ThreadContainer> CURRENT_THREAD_CONTAINER =
             new InheritableThreadLocal<>();

@@ -1,11 +1,14 @@
 package mx.bastekor.flowweaver.aspect;
 
 import jakarta.annotation.Nullable;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.context.FlowWeaverContext;
-import mx.bastekor.flowweaver.model.BusinessLogEvent;
+import mx.bastekor.flowweaver.enums.Mode;
 import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -17,14 +20,17 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.lang.NonNull;
+import org.springframework.scheduling.annotation.Async;
 
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import mx.bastekor.flowweaver.enums.Mode;
 
 import static mx.bastekor.flowweaver.enums.Mode.DYNAMIC;
 import static mx.bastekor.flowweaver.enums.Mode.MERGED;
@@ -36,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -82,7 +87,7 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals(STATIC, annotation.mode());
         assertEquals(0, annotation.dataOut().length);
 
-        
+
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
@@ -93,7 +98,7 @@ class FlowWeaverAspectBusinessLogTest {
 
     @Test
     void aroundBusinessLog_doSomething002() throws Throwable {
-        Method method = TestComponent.class.getMethod("doSomething002", int.class, String.class, List.class);
+        Method method = TestComponent.class.getMethod("doSomething002", int.class, String.class, List.class, Map.class);
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
         assertEquals(EMPTY, annotation.operationCode());
         assertEquals(EMPTY, annotation.description());
@@ -105,7 +110,7 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals(MERGED, annotation.mode());
         assertEquals(0, annotation.dataOut().length);
 
-        
+
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
@@ -129,7 +134,7 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals(DYNAMIC, annotation.mode());
         assertEquals(0, annotation.dataOut().length);
 
-        
+
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertEquals(String.class, result.getClass());
@@ -145,7 +150,7 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals("Test Description", annotation.description());
         assertEquals("Default Description", annotation.defaultDescription());
 
-        
+
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
@@ -160,7 +165,7 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals("response", annotation.value());
         assertEquals("Default Value", annotation.defaultValue());
 
-        
+
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
@@ -175,7 +180,7 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals("exception.message", annotation.exception());
         assertEquals("Default Exception", annotation.defaultException());
 
-        
+
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
@@ -189,7 +194,7 @@ class FlowWeaverAspectBusinessLogTest {
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
         assertEquals(MERGED, annotation.mode());
 
-        
+
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
@@ -209,7 +214,7 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals("value2", annotation.dataOut()[1].value());
         assertEquals("default2", annotation.dataOut()[1].defaultValue());
 
-        
+
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
@@ -221,7 +226,7 @@ class FlowWeaverAspectBusinessLogTest {
         // Arrange
         Method method = TestComponent.class.getMethod("doSomething004", int.class, String.class, List.class);
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
-        
+
         when(joinPoint.proceed()).thenThrow(new RuntimeException("Test Bitacora Error"));
         assertThrows(RuntimeException.class, () -> aspect.aroundBusinessLog(joinPoint, annotation));
         verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
@@ -301,9 +306,26 @@ class FlowWeaverAspectBusinessLogTest {
 
     @Test
     void aroundBusinessLog_withArgs() throws Throwable {
-        Method method = TestComponent.class.getMethod("doSomething002", int.class, String.class, List.class);
+        Method method = TestComponent.class.getMethod("doSomething002", int.class, String.class, List.class, Map.class);
         when(methodSignature.getMethod()).thenReturn(method);
-        when(joinPoint.getArgs()).thenReturn(new Object[]{1, "Test", List.of("Test1", "Test2", "Test3")});
+        List<Person> persons = new ArrayList<>();
+
+        Money mPerson1 = new Money("USD", new BigDecimal(100));
+        Person person1 = new Person("Test A", "test.a@email.com", mPerson1);
+
+        Money mPerson2 = new Money("MXN", new BigDecimal(10000));
+        Person person2 = new Person("Test B", "test.b@email.com", mPerson2);
+
+        persons.add(person1);
+        persons.add(person2);
+
+        Map<String, Object> objectHashMap = new HashMap<>();
+        objectHashMap.put("texto", "String");
+        objectHashMap.put("entero", 1);
+        objectHashMap.put("objeto", mPerson1);
+        objectHashMap.put("persons", persons);
+
+        when(joinPoint.getArgs()).thenReturn(new Object[]{1, "Test", persons, objectHashMap});
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
 
         when(joinPoint.proceed()).thenReturn("OK");
@@ -316,7 +338,7 @@ class FlowWeaverAspectBusinessLogTest {
 
     @Test
     void aroundBusinessLog_withEmptyArgs() throws Throwable {
-        Method method = TestComponent.class.getMethod("doSomething002", int.class, String.class, List.class);
+        Method method = TestComponent.class.getMethod("doSomething002", int.class, String.class, List.class, Map.class);
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
 
         when(joinPoint.proceed()).thenReturn("OK");
@@ -341,8 +363,9 @@ class FlowWeaverAspectBusinessLogTest {
             return "OK";
         }
 
+        @Async
         @BusinessLog(mode = MERGED)
-        public void doSomething002(int enteroInt, String cadenaString, @Nullable @NonNull List<?> listaDesconocida) {
+        public void doSomething002(int enteroInt, String cadenaString, @NonNull @Nullable List<?> listaDesconocida, @NonNull Map<String, Object> mapaDeCosas) {
         }
 
         @BusinessLog(operationCode = "MX-001", mode = DYNAMIC)
@@ -370,8 +393,8 @@ class FlowWeaverAspectBusinessLogTest {
         }
 
         @BusinessLog(dataOut = {
-            @DataParam(key = "key1", value = "value1", defaultValue = "default1"),
-            @DataParam(key = "key2", value = "value2", defaultValue = "default2")
+                @DataParam(key = "key1", value = "value1", defaultValue = "default1"),
+                @DataParam(key = "key2", value = "value2", defaultValue = "default2")
         })
         public String doSomethingWithDataOut() {
             return "OK";
@@ -401,5 +424,22 @@ class FlowWeaverAspectBusinessLogTest {
         public boolean paymentByDebitCard(String description, double amount, String accountNumber, String cardNumber) {
             return true;
         }
+    }
+
+    @Getter
+    @ToString
+    @AllArgsConstructor
+    static class Person {
+        private String name;
+        private String email;
+        private Money amount;
+    }
+
+    @Getter
+    @ToString
+    @AllArgsConstructor
+    static class Money {
+        private String currency;
+        private BigDecimal amount;
     }
 }

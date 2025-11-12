@@ -206,10 +206,11 @@ public final class BusinessLogUtils {
      * @param method Interfaz de reflection
      * @return Lista de los nombres de las anotaciones (si es que cuenta con ellas).
      */
-    private static List<String> getMethodAnnotations(Method method) {
+    public static List<String> getMethodAnnotations(Method method) {
         return Arrays.stream(method.getAnnotations())
                 .map(Annotation::annotationType)
                 .map(Class::getSimpleName)
+                .map(annotation -> "@" + annotation)
                 .toList();
     }
 
@@ -221,10 +222,11 @@ public final class BusinessLogUtils {
      * @param index                Indice del argumento
      * @return Lista de los nombres de las anotaciones (si es que cuenta con ellas).
      */
-    private static List<String> getArgumentAnnotations(Annotation[][] parameterAnnotations, int index) {
+    public static List<String> getArgumentAnnotations(Annotation[][] parameterAnnotations, int index) {
         return Arrays.stream(parameterAnnotations[index])
                 .map(Annotation::annotationType)
                 .map(Class::getSimpleName)
+                .map(annotation -> "@" + annotation)
                 .toList();
     }
 }

@@ -9,6 +9,8 @@ import mx.bastekor.flowweaver.mapper.SafeSnapshotMapper;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
+import mx.bastekor.flowweaver.util.BusinessLogUtils;
+import mx.bastekor.flowweaver.util.Util;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -16,8 +18,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.UUID;
 
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_PREFIX;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_END;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_START;
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.addAuditTrailContainer;
@@ -26,6 +30,7 @@ import static mx.bastekor.flowweaver.context.FlowWeaverContext.clearBusinessLogC
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.printRecursive;
 import static mx.bastekor.flowweaver.enums.StatusEnum.FAILURE;
 import static mx.bastekor.flowweaver.enums.StatusEnum.SUCCESS;
+import static mx.bastekor.flowweaver.mapper.SafeSnapshotMapper.mapArgs;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.trim;
@@ -37,13 +42,13 @@ import static org.apache.commons.lang3.StringUtils.trim;
 @RequiredArgsConstructor
 public class FlowWeaverAspect {
 
-    private static final String BUSINESS_LOG_PREFIX = "BL#";
-    private static final String AUDIT_TRAIL_PREFIX = "AT#";
-
-    private final IBusinessLogAspectService businessLogAspectService;
-
     @Value("${flow-weaver.debug.recursive:false}")
     private boolean bool;
+
+    @Value("${flow-weaver.max-depth:3}")
+    private int maxDepth;
+
+    private final IBusinessLogAspectService businessLogAspectService;
 
     /**
      * Aspecto para @BusinessLog
@@ -68,9 +73,9 @@ public class FlowWeaverAspect {
             log.error("❌ [BusinessLog ERROR] [{}|{}] | Error: {}", blc.getFlowId(), blc.getOperationCode(), throwable.getMessage());
             throw throwable;
         } finally {
-            final String argsToJSON = SafeSnapshotMapper.mapArgs(joinPoint, 3);
-            System.out.println("Json:: " + argsToJSON);
-            businessLogAspectService.processBusinessLog(businessLog, joinPoint, status, response, exception, blc);
+            final String snapshot = mapArgs(joinPoint, maxDepth);
+//            businessLogAspectService.processBusinessLog(businessLog, joinPoint, status, response, exception, blc);
+            businessLogAspectService.processBusinessLog(businessLog, snapshot, status, response, exception, blc);
 
             printRecursive(bool);
 

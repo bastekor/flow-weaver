@@ -1,5 +1,6 @@
 package mx.bastekor.flowweaver.model;
 
+import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 import java.lang.reflect.Array;
@@ -7,10 +8,10 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 @SuppressWarnings("unchecked")
-@NoArgsConstructor(access = lombok.AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SafeSerializer {
 
-    public static Object safeValue(Object value, int depth, int maxDepth) {
+    public static Map<String, Object> safeValue(Object value, int depth, int maxDepth) {
         if (value == null) {
             Map<String, Object> nullMap = new LinkedHashMap<>();
             nullMap.put("_type", "null");
