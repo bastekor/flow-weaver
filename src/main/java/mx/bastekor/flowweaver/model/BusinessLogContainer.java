@@ -8,24 +8,36 @@ import java.util.List;
 import static java.util.UUID.randomUUID;
 
 import lombok.Getter;
+import lombok.Setter;
+import mx.bastekor.flowweaver.annotation.BusinessLog;
+import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.util.Util;
 
 public class BusinessLogContainer {
 
     @Getter
-    private final String flowId;
+    private final String operationId;
     @Getter
     private final String operationCode;
     private final Instant start;
+
+    @Setter @Getter
+    private String outputData;
+    @Setter @Getter
+    private BusinessLog businessLog;
+    @Setter @Getter
+    private StatusEnum status;
+    @Setter @Getter
+    private Object response;
     private final List<AuditTrailContainer> auditTrails;
 
     public BusinessLogContainer(String operationCode) {
         this(operationCode, randomUUID().toString());
     }
 
-    public BusinessLogContainer(String operationCode, String flowId) {
+    public BusinessLogContainer(String operationCode, String operationId) {
         this.operationCode = operationCode;
-        this.flowId = flowId;
+        this.operationId = operationId;
         this.start = now();
         this.auditTrails = new ArrayList<>();
     }

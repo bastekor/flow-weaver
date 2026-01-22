@@ -1,6 +1,6 @@
 {
-  "request-id": "12345-67890-12345-67890",
-  "flow-code": "FL-123",
+  "request_id": "12345-67890-12345-67890",
+  "flow_code": "FL-123",
   "description": "Registrar pedido",
   "status": "SUCCESS",
   "result": "OK", // aquí el valor de value o exception

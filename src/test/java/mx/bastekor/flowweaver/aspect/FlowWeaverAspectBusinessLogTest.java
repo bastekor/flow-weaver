@@ -21,6 +21,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -64,18 +65,22 @@ class FlowWeaverAspectBusinessLogTest {
 
     @BeforeEach
     void setUp() {
+
+        ReflectionTestUtils.setField(aspect, "bool", true);
+        ReflectionTestUtils.setField(aspect, "maxDepth", 5);
         // Limpiar el contexto antes de cada prueba para evitar interferencias
         FlowWeaverContext.clearCurrentThreadContainer();
         when(joinPoint.getSignature()).thenReturn(methodSignature);
+        when(methodSignature.getDeclaringTypeName()).thenReturn(TestComponent.class.getName());
     }
 
     @Test
     void aroundBusinessLog_doSomething001() throws Throwable {
 
+        // método doSomething001 anotado con @BusinessLog sin parámetros
         Method method = TestComponent.class.getMethod("doSomething001");
         when(methodSignature.getMethod()).thenReturn(method);
         when(joinPoint.getArgs()).thenReturn(new Object[0]);
-        // Arrange
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
         assertEquals(EMPTY, annotation.operationCode());
         assertEquals(EMPTY, annotation.description());
@@ -87,13 +92,12 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals(STATIC, annotation.mode());
         assertEquals(0, annotation.dataOut().length);
 
-
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
         assertEquals(String.class, result.getClass());
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
@@ -110,18 +114,19 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals(MERGED, annotation.mode());
         assertEquals(0, annotation.dataOut().length);
 
-
         when(joinPoint.proceed()).thenReturn("OK");
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{1, "Test", new ArrayList<>(), new HashMap<>()});
+
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
         assertEquals(String.class, result.getClass());
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
     void aroundBusinessLog_withOperationCode() throws Throwable {
-        // Arrange
         Method method = TestComponent.class.getMethod("doSomething003");
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
         assertEquals("MX-001", annotation.operationCode());
@@ -134,42 +139,43 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals(DYNAMIC, annotation.mode());
         assertEquals(0, annotation.dataOut().length);
 
-
         when(joinPoint.proceed()).thenReturn("OK");
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[0]);
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertEquals(String.class, result.getClass());
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
     void aroundBusinessLog_withDescription() throws Throwable {
-        // Arrange
         Method method = TestComponent.class.getMethod("doSomethingWithDescription");
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
         assertEquals("Test Description", annotation.description());
         assertEquals("Default Description", annotation.defaultDescription());
 
-
         when(joinPoint.proceed()).thenReturn("OK");
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[0]);
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
     void aroundBusinessLog_withValue() throws Throwable {
-        // Arrange
         Method method = TestComponent.class.getMethod("doSomethingWithValue");
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
         assertEquals("response", annotation.value());
         assertEquals("Default Value", annotation.defaultValue());
 
-
         when(joinPoint.proceed()).thenReturn("OK");
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[0]);
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
@@ -180,30 +186,30 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals("exception.message", annotation.exception());
         assertEquals("Default Exception", annotation.defaultException());
 
-
         when(joinPoint.proceed()).thenReturn("OK");
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[0]);
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
     void aroundBusinessLog_withModeMerged() throws Throwable {
-        // Arrange
         Method method = TestComponent.class.getMethod("doSomethingWithMergedMode");
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
         assertEquals(MERGED, annotation.mode());
 
-
         when(joinPoint.proceed()).thenReturn("OK");
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[0]);
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
     void aroundBusinessLog_withDataOut() throws Throwable {
-        // Arrange
         Method method = TestComponent.class.getMethod("doSomethingWithDataOut");
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
         assertEquals(2, annotation.dataOut().length);
@@ -214,35 +220,37 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals("value2", annotation.dataOut()[1].value());
         assertEquals("default2", annotation.dataOut()[1].defaultValue());
 
-
         when(joinPoint.proceed()).thenReturn("OK");
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[0]);
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
     void aroundBusinessLog_error() throws Throwable {
-        // Arrange
         Method method = TestComponent.class.getMethod("doSomething004", int.class, String.class, List.class);
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
 
         when(joinPoint.proceed()).thenThrow(new RuntimeException("Test Bitacora Error"));
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{1, "Test", new ArrayList<>(), new HashMap<>()});
         assertThrows(RuntimeException.class, () -> aspect.aroundBusinessLog(joinPoint, annotation));
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
     void testConcurrency_businessLog() throws Throwable {
-        // Arrange
         Method method = TestComponent.class.getMethod("doSomething004", int.class, String.class, List.class);
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
         when(joinPoint.proceed()).thenReturn(null);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{1, "Test", new ArrayList<>(), new HashMap<>()});
 
         ExecutorService executor = Executors.newFixedThreadPool(10);
         int numberOfTasks = 20;
 
-        // Act
         for (int i = 0; i < numberOfTasks; i++) {
             executor.submit(() -> {
                 try {
@@ -260,23 +268,23 @@ class FlowWeaverAspectBusinessLogTest {
         // Assert
         assertTrue(finished, "All tasks should complete without timeout");
         // Note: Since processBusinessLog is @Async, we verify it was called but not necessarily completed synchronously
-        verify(businessLogAspectService, times(numberOfTasks)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(numberOfTasks)).processBusinessLog(any());
     }
 
     @Test
     void testProcessBusinessLogFailure_businessLog() throws Throwable {
-        // Arrange
         Method method = TestComponent.class.getMethod("doSomething001");
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
         when(joinPoint.proceed()).thenReturn("OK");
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[0]);
 
         // Mock processBusinessLog to always throw
-        Mockito.doThrow(new RuntimeException("Process failed"))
-                .when(businessLogAspectService).processBusinessLog(any(), any(), any(), any(), any(), any());
+        Mockito.doThrow(new RuntimeException("Process failed")).when(businessLogAspectService).processBusinessLog(any());
 
         // Act & Assert
         assertThrows(RuntimeException.class, () -> aspect.aroundBusinessLog(joinPoint, annotation));
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
@@ -298,10 +306,13 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals("0", annotation.dataOut()[1].defaultValue());
 
         when(joinPoint.proceed()).thenReturn(true);
+        when(methodSignature.getDeclaringTypeName()).thenReturn(PaymentComponent.class.getName());
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{"1234567890", 100.0, "MXN", "MX"});
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
         assertTrue((boolean) result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
@@ -333,7 +344,7 @@ class FlowWeaverAspectBusinessLogTest {
         assertNotNull(result);
         assertEquals(String.class, result.getClass());
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     @Test
@@ -342,11 +353,13 @@ class FlowWeaverAspectBusinessLogTest {
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
 
         when(joinPoint.proceed()).thenReturn("OK");
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{0, EMPTY, new ArrayList<>(), new HashMap<>()});
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
         assertNotNull(result);
         assertEquals(String.class, result.getClass());
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(1)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(1)).processBusinessLog(any());
     }
 
     private BusinessLog getBusinessLogAnnotation(Method method) {

@@ -73,7 +73,7 @@ public final class FlowWeaverContext {
             businessLogContainer = ofNullable(threadContainer.getBusinessLogContainerDefault())
                     .stream()
                     .peek(blc -> log.warn("👨 [PADRASTRO] Recuperando BusinessLog automático: [{}|{}] para AuditTrail huérfano.",
-                            blc.getFlowId(), blc.getOperationCode()))
+                            blc.getOperationId(), blc.getOperationCode()))
                     .findFirst()
                     .orElseGet(() -> createBusinessLogContainer(generate(BUSINESS_LOG_PREFIX)));
         } else {
@@ -90,7 +90,7 @@ public final class FlowWeaverContext {
         ThreadContainer threadContainer = getCurrentThreadContainer();
         final BusinessLogContainer businessLogContainer = new BusinessLogContainer(operationCode);
         log.debug("🏁 [BusinessLog START] [{}|{}] | Thread: [{}|{}]",
-                businessLogContainer.getFlowId(),
+                businessLogContainer.getOperationId(),
                 businessLogContainer.getOperationCode(),
                 threadContainer.getThreadId(),
                 threadContainer.getThreadName());
@@ -107,13 +107,13 @@ public final class FlowWeaverContext {
         log.info("📦 BusinessLog establecido en thread [{}|{}]: [{}|{}]",
                 threadContainer.getThreadId(),
                 threadContainer.getThreadName(),
-                businessLogContainer.getFlowId(),
+                businessLogContainer.getOperationId(),
                 businessLogContainer.getOperationCode());
 
         threadContainer.addBusinessLogContainer(businessLogContainer);
 
         log.info("💾 BusinessLog guardado: [{}|{}] con {} AuditTrails",
-                businessLogContainer.getFlowId(),
+                businessLogContainer.getOperationId(),
                 businessLogContainer.getOperationCode(),
                 businessLogContainer.getAuditTrailCount());
     }
@@ -129,7 +129,7 @@ public final class FlowWeaverContext {
                     threadContainer.getThreadId(),
                     threadContainer.getThreadName(),
                     businessLogContainer.getOperationCode(),
-                    businessLogContainer.getFlowId());
+                    businessLogContainer.getOperationId());
             threadContainer.clearBusinessLogContainer(operationCode);
 
             // Si ya no hay BusinessLogs, limpiar el ThreadContainer completo
@@ -138,7 +138,7 @@ public final class FlowWeaverContext {
             }
 
             log.debug("🏁 [BusinessLog END] [{}|{}] | Duration: {} | AuditTrails: {} | Thread: [{}|{}]",
-                    businessLogContainer.getFlowId(),
+                    businessLogContainer.getOperationId(),
                     businessLogContainer.getOperationCode(),
                     businessLogContainer.getDuration(),
                     businessLogContainer.getAuditTrails().size(),
@@ -155,7 +155,7 @@ public final class FlowWeaverContext {
             log.debug("  ▶️ [AuditTrail ENTRADA] [{}|{}] | BusinessLog: [{}|{}] | Thread: [{}|{}]",
                     auditTrailContainer.getFlowId(),
                     auditTrailContainer.getOperationCode(),
-                    businessLogContainer.getFlowId(),
+                    businessLogContainer.getOperationId(),
                     businessLogContainer.getOperationCode(),
                     threadContainer.getThreadId(),
                     threadContainer.getThreadName());
@@ -163,7 +163,7 @@ public final class FlowWeaverContext {
             log.debug("  ◀️ [AuditTrail SALIDA] [{}|{}] | BusinessLog: [{}|{}] | Thread: [{}|{}]",
                     auditTrailContainer.getFlowId(),
                     auditTrailContainer.getOperationCode(),
-                    businessLogContainer.getFlowId(),
+                    businessLogContainer.getOperationId(),
                     businessLogContainer.getOperationCode(),
                     threadContainer.getThreadId(),
                     threadContainer.getThreadName());
@@ -195,13 +195,13 @@ public final class FlowWeaverContext {
             for (BusinessLogContainer bl : tc.getAllBusinessLogContainer()) {
                 log.info(" ├─ 📊 BusinessLogContainer [{}|{}] - [{}|{}] | AuditTrails: {} | Duration: {}",
                         tc.getThreadId(), tc.getThreadName(),
-                        bl.getFlowId(), bl.getOperationCode(),
+                        bl.getOperationId(), bl.getOperationCode(),
                         bl.getAuditTrailCount(), bl.getDuration());
 
                 for (AuditTrailContainer at : bl.getAuditTrails()) {
                     log.info(" │   └─ 📝 AuditTrail [{}|{}] - [{}|{}] - [{}|{}] | flowCode: {} | Duration: {}",
                             tc.getThreadId(), tc.getThreadName(),
-                            bl.getFlowId(), bl.getOperationCode(),
+                            bl.getOperationId(), bl.getOperationCode(),
                             at.getFlowId(), at.getOperationCode(),
                             at.getFlowCode(), at.getDuration());
                 }

@@ -20,6 +20,12 @@ public final class SafeSnapshotMapper {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    /**
+     * Método encargado de generar en formato JSON la firma completa del método anotado.
+     * @param joinPoint Objeto interceptor
+     * @param maxDepth máximo nivel de anidamiento
+     * @return Cadena en formato JSON
+     */
     public static String mapArgs(ProceedingJoinPoint joinPoint, int maxDepth) {
         try {
             MethodSignature signature = (MethodSignature) joinPoint.getSignature();

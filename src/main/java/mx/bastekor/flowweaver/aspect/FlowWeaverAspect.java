@@ -5,12 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.enums.StatusEnum;
-import mx.bastekor.flowweaver.mapper.SafeSnapshotMapper;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
-import mx.bastekor.flowweaver.util.BusinessLogUtils;
-import mx.bastekor.flowweaver.util.Util;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -18,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_PREFIX;
@@ -62,23 +58,29 @@ public class FlowWeaverAspect {
 
         StatusEnum status = null;
         Object response = null;
-        Throwable exception = null;
         try {
             status = SUCCESS;
             response = joinPoint.proceed();
             return response;
         } catch (Throwable throwable) {
             status = FAILURE;
-            exception = throwable;
-            log.error("❌ [BusinessLog ERROR] [{}|{}] | Error: {}", blc.getFlowId(), blc.getOperationCode(), throwable.getMessage());
+            response = throwable;
+            log.error("❌ [BusinessLog ERROR] [{}|{}] | Error: {}", blc.getOperationId(), blc.getOperationCode(), throwable.getMessage());
             throw throwable;
         } finally {
-            final String snapshot = mapArgs(joinPoint, maxDepth);
-//            businessLogAspectService.processBusinessLog(businessLog, joinPoint, status, response, exception, blc);
-            businessLogAspectService.processBusinessLog(businessLog, snapshot, status, response, exception, blc);
+            blc.setStatus(status);
+            blc.setResponse(response);
+            blc.setOutputData(mapArgs(joinPoint, maxDepth));
+            blc.setBusinessLog(businessLog);
+
+            try {
+                businessLogAspectService.processBusinessLog(blc);
+            } catch (Exception exc) {
+                log.error("ERROR A TRATAR, NO ERROR DE FLOW SINO DE PROCESO - Error procesando BusinessLog: {}", exc.getMessage());
+                // Deberemos de mandar a log datos iniciales mas errores de exc...
+            }
 
             printRecursive(bool);
-
             // Eliminar BusinessLogContainer del contexto del thread.
             clearBusinessLogContainer(blc.getOperationCode());
             log.info(BUSINESS_LOG_END, status);
@@ -103,8 +105,9 @@ public class FlowWeaverAspect {
         }
 
         final AuditTrailContainer atcIn = new AuditTrailContainer(flowCode, operationCode, flowId);
+        final String snapshotIn = mapArgs(joinPoint, maxDepth);
         addAuditTrailContainer(0, atcIn, blc);
-        businessLogAspectService.processAuditTrailIn(auditTrail, joinPoint, atcIn);
+        businessLogAspectService.processAuditTrailIn(auditTrail, snapshotIn, atcIn);
 
         StatusEnum status = SUCCESS;
         Object response = null;
@@ -124,7 +127,8 @@ public class FlowWeaverAspect {
                     atcOut.getDuration(), throwable.getMessage());
             throw throwable;
         } finally {
-            businessLogAspectService.processAuditTrailOut(auditTrail, joinPoint, status, response, exception, atcOut);
+            final String snapshotOut = mapArgs(joinPoint, maxDepth);
+            businessLogAspectService.processAuditTrailOut(auditTrail, snapshotOut, status, response, exception, atcOut);
             // Único para "BusinessLogContainer" por default, ya que elimina al BusinessLogContainer creado
             // temporalmente para este "huerfano".
             if (isBlank(auditTrail.flowCode())) {

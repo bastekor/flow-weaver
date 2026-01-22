@@ -25,7 +25,7 @@ public class ThreadContainer {
 
     // Ahora guardamos por flowId (no por operationCode)
     public void addBusinessLogContainer(final BusinessLogContainer businessLogContainer) {
-        businessLogs.put(businessLogContainer.getFlowId(), businessLogContainer);
+        businessLogs.put(businessLogContainer.getOperationId(), businessLogContainer);
     }
 
     /**
