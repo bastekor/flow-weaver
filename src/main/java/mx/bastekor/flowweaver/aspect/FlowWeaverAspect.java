@@ -70,7 +70,7 @@ public class FlowWeaverAspect {
         } finally {
             blc.setStatus(status);
             blc.setResponse(response);
-            blc.setOutputData(mapArgs(joinPoint, maxDepth));
+            blc.setOutputData(mapArgs(joinPoint, maxDepth)); // Renombrar porque no son datos de salida sino la firma del método
             blc.setBusinessLog(businessLog);
 
             try {
@@ -78,6 +78,14 @@ public class FlowWeaverAspect {
             } catch (Exception exc) {
                 log.error("ERROR A TRATAR, NO ERROR DE FLOW SINO DE PROCESO - Error procesando BusinessLog: {}", exc.getMessage());
                 // Deberemos de mandar a log datos iniciales mas errores de exc...
+
+                /*
+                 * Aquí se podrá aplicar alguna lógica que permita el envío de datos de entrada y la búsqueda recursiva de las
+                 * excepciones anidadas. Quizás con el tiempo se puede implementar algún método que permita saber que datos se
+                 * fueron tomando y que datos no, pero eso solo será informativo para mantenimiento de esta dependencia, ya que
+                 * errores en lógica interna de como se maneja "x" o "y" cosa es tema propio que no debe de afectar la legibilidad
+                 * de la traza que se llegue a mandar, mas bien deberá de complementarla.
+                 */
             }
 
             printRecursive(bool);
