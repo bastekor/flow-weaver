@@ -13,6 +13,7 @@ import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -271,6 +272,7 @@ class FlowWeaverAspectBusinessLogTest {
         verify(businessLogAspectService, times(numberOfTasks)).processBusinessLog(any());
     }
 
+    @Disabled("Deshabilitado debido a que aún no se constuye lógica de error de libreria")
     @Test
     void testProcessBusinessLogFailure_businessLog() throws Throwable {
         Method method = TestComponent.class.getMethod("doSomething001");

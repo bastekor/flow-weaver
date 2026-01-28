@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_PREFIX;
+
 public class ThreadContainer {
 
     @Getter
@@ -49,7 +51,7 @@ public class ThreadContainer {
     public BusinessLogContainer getBusinessLogContainerDefault() {
         return businessLogs.values()
                 .stream()
-                .filter(bl -> bl.getOperationCode().startsWith("BL#"))
+                .filter(bl -> bl.getOperationCode().startsWith(BUSINESS_LOG_PREFIX))
                 .findFirst()
                 .orElse(null);
     }

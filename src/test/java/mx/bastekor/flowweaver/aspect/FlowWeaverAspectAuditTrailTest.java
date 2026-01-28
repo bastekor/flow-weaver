@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.ExecutorService;
@@ -52,12 +53,13 @@ class FlowWeaverAspectAuditTrailTest {
 
     @BeforeEach
     void setUp() {
-//        when(joinPoint.getSignature()).thenReturn(methodSignature);
+        ReflectionTestUtils.setField(aspect, "bool", true);
+        ReflectionTestUtils.setField(aspect, "maxDepth", 5);
         // Limpiar el contexto antes de cada prueba para evitar interferencias
         FlowWeaverContext.clearCurrentThreadContainer();
         // Mockear los métodos de audit trail para evitar excepciones
-        Mockito.doNothing().when(businessLogAspectService).processAuditTrailIn(any(), any(), any());
-        Mockito.doNothing().when(businessLogAspectService).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        Mockito.doNothing().when(businessLogAspectService).processAuditTrail(any());
+
     }
 
     @Test
@@ -78,17 +80,12 @@ class FlowWeaverAspectAuditTrailTest {
         assertEquals(0, annotation.dataOut().length);
         assertEquals(0, annotation.dataInOut().length);
 
-//        when(methodSignature.getMethod()).thenReturn(method);
-//        when(joinPoint.getArgs()).thenReturn(new Object[]{});
         when(joinPoint.proceed()).thenReturn("Audit OK");
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertNotNull(result);
         assertEquals(String.class, result.getClass());
         assertEquals("Audit OK", result);
-        // AuditTrail doesn't call processBusinessLog directly - only BusinessLog does
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailIn(any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -113,10 +110,7 @@ class FlowWeaverAspectAuditTrailTest {
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertEquals(String.class, result.getClass());
         assertEquals("Audit OK", result);
-        // AuditTrail doesn't call processBusinessLog directly - only BusinessLog does
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailIn(any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -132,7 +126,7 @@ class FlowWeaverAspectAuditTrailTest {
         assertNotNull(result);
         assertEquals(String.class, result.getClass());
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -146,7 +140,7 @@ class FlowWeaverAspectAuditTrailTest {
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertNotNull(result);
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -159,7 +153,7 @@ class FlowWeaverAspectAuditTrailTest {
 
         when(joinPoint.proceed()).thenThrow(new RuntimeException("Audit Error"));
         assertThrows(RuntimeException.class, () -> aspect.aroundAuditTrail(joinPoint, annotation));
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -172,9 +166,7 @@ class FlowWeaverAspectAuditTrailTest {
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertNotNull(result);
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailIn(any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -193,9 +185,7 @@ class FlowWeaverAspectAuditTrailTest {
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertNotNull(result);
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailIn(any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -208,9 +198,7 @@ class FlowWeaverAspectAuditTrailTest {
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertNotNull(result);
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailIn(any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -223,9 +211,7 @@ class FlowWeaverAspectAuditTrailTest {
         when(joinPoint.proceed()).thenReturn("OK");
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertNotNull(result);
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailIn(any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -235,10 +221,7 @@ class FlowWeaverAspectAuditTrailTest {
         AuditTrail annotation = this.getAuditTrailAnnotation(method);
         when(joinPoint.proceed()).thenThrow(new RuntimeException("Audit Error"));
         assertThrows(RuntimeException.class, () -> aspect.aroundAuditTrail(joinPoint, annotation));
-        // AuditTrail doesn't call processBusinessLog directly - only BusinessLog does
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailIn(any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -268,11 +251,8 @@ class FlowWeaverAspectAuditTrailTest {
 
         // Assert
         assertTrue(finished, "All tasks should complete without timeout");
-        // AuditTrail doesn't call processBusinessLog directly - only BusinessLog does
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
         // Note: Since processAuditTrailIn and processAuditTrailOut are @Async, we verify they were called but not necessarily completed synchronously
-        verify(businessLogAspectService, times(numberOfTasks)).processAuditTrailIn(any(), any(), any());
-        verify(businessLogAspectService, times(numberOfTasks)).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times((numberOfTasks*2))).processAuditTrail(any());
     }
 
     @Test
@@ -286,10 +266,7 @@ class FlowWeaverAspectAuditTrailTest {
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertNotNull(result);
         assertEquals("OK", result);
-        // AuditTrail doesn't call processBusinessLog directly - only BusinessLog does
-        verify(businessLogAspectService, times(0)).processBusinessLog(any(), any(), any(), any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailIn(any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -302,8 +279,7 @@ class FlowWeaverAspectAuditTrailTest {
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertNotNull(result);
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(1)).processAuditTrailIn(any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     @Test
@@ -316,8 +292,7 @@ class FlowWeaverAspectAuditTrailTest {
         Object result = aspect.aroundAuditTrail(joinPoint, annotation);
         assertNotNull(result);
         assertEquals("OK", result);
-        verify(businessLogAspectService, times(1)).processAuditTrailIn(any(), any(), any());
-        verify(businessLogAspectService, times(1)).processAuditTrailOut(any(), any(), any(), any(), any(), any());
+        verify(businessLogAspectService, times(2)).processAuditTrail(any());
     }
 
     private AuditTrail getAuditTrailAnnotation(Method method) {

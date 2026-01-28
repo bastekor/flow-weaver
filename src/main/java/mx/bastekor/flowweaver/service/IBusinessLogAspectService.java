@@ -10,22 +10,5 @@ import org.aspectj.lang.ProceedingJoinPoint;
 public interface IBusinessLogAspectService {
 
     void processBusinessLog(BusinessLogContainer businessLogContainer);
-
-    void processBusinessLog(BusinessLog businessLog,
-                            String snapshot,
-                            StatusEnum statusEnum,
-                            Object response,
-                            Throwable exception,
-                            BusinessLogContainer businessLogContainer);
-
-    void processAuditTrailIn(AuditTrail auditTrail,
-                             String snapshot,
-                             AuditTrailContainer auditTrailContainer);
-
-    void processAuditTrailOut(AuditTrail auditTrail,
-                              String snapshot,
-                              StatusEnum statusEnum,
-                              Object response,
-                              Throwable exception,
-                              AuditTrailContainer auditTrailContainer);
+    void processAuditTrail(AuditTrailContainer auditTrailContainer);
 }

@@ -81,6 +81,13 @@ import java.lang.annotation.Target;
 public @interface AuditTrail {
 
     /**
+     * Código grupal de flujo funcional (groupCode) proporcionado por negocio.
+     * Si no se especifica o no se resuelve, el sistema puede inferir un identificador
+     * por default (GC#XXXX-XXXX).
+     */
+    String groupCode() default "";
+
+    /**
      * Código de operación relacionado del contexto {@code @BusinessLog}, si aplica.
      * Permite establecer trazabilidad cruzada entre ambos mecanismos.
      */
@@ -94,7 +101,7 @@ public @interface AuditTrail {
      * - Un texto directo definido aquí.
      * <p>
      * Si no se especifica o no se resuelve, el sistema puede inferir un identificador
-     * basado en clase y método como fallback.
+     * por default (AT#XXXX-XXXX).
      */
     String operationCode() default "";
 

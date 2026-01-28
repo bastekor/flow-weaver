@@ -15,10 +15,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
-
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_END;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_ERROR;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_PREFIX;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_START;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_END;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_ERROR;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_START;
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.addAuditTrailContainer;
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.assignBusinessLogContainer;
@@ -29,7 +31,6 @@ import static mx.bastekor.flowweaver.enums.StatusEnum.SUCCESS;
 import static mx.bastekor.flowweaver.mapper.SafeSnapshotMapper.mapArgs;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.trim;
 
 @Slf4j
 @Aspect
@@ -52,10 +53,9 @@ public class FlowWeaverAspect {
      */
     @Around("@annotation(businessLog)")
     public Object aroundBusinessLog(ProceedingJoinPoint joinPoint, BusinessLog businessLog) throws Throwable {
-
         log.info(BUSINESS_LOG_START);
-        final BusinessLogContainer blc = assignBusinessLogContainer(trim(businessLog.operationCode()));
 
+        final BusinessLogContainer blc = assignBusinessLogContainer(businessLog.groupCode(), businessLog.operationCode());
         StatusEnum status = null;
         Object response = null;
         try {
@@ -65,12 +65,12 @@ public class FlowWeaverAspect {
         } catch (Throwable throwable) {
             status = FAILURE;
             response = throwable;
-            log.error("❌ [BusinessLog ERROR] [{}|{}] | Error: {}", blc.getOperationId(), blc.getOperationCode(), throwable.getMessage());
+            log.error(BUSINESS_LOG_ERROR, blc.getOperationId(), blc.getOperationCode(), throwable.getMessage(), throwable);
             throw throwable;
         } finally {
             blc.setStatus(status);
             blc.setResponse(response);
-            blc.setOutputData(mapArgs(joinPoint, maxDepth)); // Renombrar porque no son datos de salida sino la firma del método
+            blc.setExitSignature(mapArgs(joinPoint, maxDepth));
             blc.setBusinessLog(businessLog);
 
             try {
@@ -101,47 +101,60 @@ public class FlowWeaverAspect {
      */
     @Around("@annotation(auditTrail)")
     public Object aroundAuditTrail(ProceedingJoinPoint joinPoint, AuditTrail auditTrail) throws Throwable {
+        log.info(AUDIT_TRAIL_START);
 
-        final BusinessLogContainer blc = assignBusinessLogContainer(trim(auditTrail.flowCode()));
-        final String flowCode = blc.getOperationCode();
-        final String flowId = UUID.randomUUID().toString();
-
-        // Código del flujo "AuditTrail" que registra el flujo funcional
-        String operationCode = auditTrail.operationCode();
-        if (isBlank(operationCode)) {
-            operationCode = generate(AUDIT_TRAIL_PREFIX);
-        }
-
-        final AuditTrailContainer atcIn = new AuditTrailContainer(flowCode, operationCode, flowId);
-        final String snapshotIn = mapArgs(joinPoint, maxDepth);
-        addAuditTrailContainer(0, atcIn, blc);
-        businessLogAspectService.processAuditTrailIn(auditTrail, snapshotIn, atcIn);
-
-        StatusEnum status = SUCCESS;
+        final AuditTrailContainer atcIn = new AuditTrailContainer();
+        StatusEnum status = null;
         Object response = null;
-        Throwable exception = null;
+
+        final BusinessLogContainer blc = assignBusinessLogContainer(auditTrail.groupCode(), auditTrail.flowCode());
+        final String groupCode = blc.getGroupCode();
+        final String flowCode = blc.getOperationCode();
+        final String flowId = blc.getOperationId();
+        final String operationCode = isBlank(auditTrail.operationCode()) ? generate(AUDIT_TRAIL_PREFIX) : auditTrail.operationCode();
+
+        this.fillAuditTrailContainer(groupCode, flowCode, flowId, operationCode, auditTrail, atcIn);
+        atcIn.setEntrySignature(mapArgs(joinPoint, maxDepth));
+        addAuditTrailContainer(0, atcIn, blc);
+        businessLogAspectService.processAuditTrail(atcIn);
 
         // Se crea el objeto de salida antes de invocar al método anotado para obtener duración.
-        final AuditTrailContainer atcOut = new AuditTrailContainer(flowCode, operationCode, flowId);
-        addAuditTrailContainer(1, atcOut, blc);
+        final AuditTrailContainer atcOut = new AuditTrailContainer();
+
         try {
+            status = SUCCESS;
             response = joinPoint.proceed();
             return response;
         } catch (Throwable throwable) {
             status = FAILURE;
-            exception = throwable;
-            log.error("  ❌ [AuditTrail ERROR] [{}|{}] | Duration: {} | Error: {}",
+            response = throwable;
+            log.error(AUDIT_TRAIL_ERROR,
                     atcOut.getOperationCode(), atcOut.getFlowId(),
-                    atcOut.getDuration(), throwable.getMessage());
+                    atcOut.getDuration(), throwable.getMessage(), throwable);
             throw throwable;
         } finally {
-            final String snapshotOut = mapArgs(joinPoint, maxDepth);
-            businessLogAspectService.processAuditTrailOut(auditTrail, snapshotOut, status, response, exception, atcOut);
+            this.fillAuditTrailContainer(groupCode, flowCode, flowId, operationCode, auditTrail, atcOut);
+            atcOut.setExitSignature(mapArgs(joinPoint, maxDepth));
+            atcOut.setResponse(response);
+            atcOut.setStatus(status);
+            addAuditTrailContainer(1, atcOut, blc);
+            businessLogAspectService.processAuditTrail(atcOut);
+
             // Único para "BusinessLogContainer" por default, ya que elimina al BusinessLogContainer creado
             // temporalmente para este "huerfano".
             if (isBlank(auditTrail.flowCode())) {
                 clearBusinessLogContainer(blc.getOperationCode());
             }
+            log.info(AUDIT_TRAIL_END, status);
         }
+    }
+
+    private void fillAuditTrailContainer(String groupCode, String flowCode, String flowId, String operationCode,
+                                         AuditTrail auditTrail, AuditTrailContainer auditTrailContainer) {
+        auditTrailContainer.setGroupCode(groupCode);
+        auditTrailContainer.setFlowCode(flowCode);
+        auditTrailContainer.setFlowId(flowId);
+        auditTrailContainer.setOperationCode(operationCode);
+        auditTrailContainer.setAuditTrail(auditTrail);
     }
 }

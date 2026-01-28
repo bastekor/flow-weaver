@@ -1,30 +1,50 @@
 package mx.bastekor.flowweaver.model;
 
-import java.time.Instant;
-import static java.time.Instant.now;
-import static java.util.UUID.randomUUID;
-
 import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import mx.bastekor.flowweaver.annotation.AuditTrail;
+import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.util.Util;
 
+import java.time.Instant;
+
+import static java.time.Instant.now;
+
+@ToString
 public class AuditTrailContainer {
 
-    @Getter
-    private final String flowCode;
-    @Getter
-    private final String operationCode;
-    @Getter
-    private final String flowId;
     private final Instant start;
 
-    public AuditTrailContainer(String flowCode, String operationCode) {
-        this(flowCode, operationCode, randomUUID().toString());
+    @Setter @Getter
+    private String flowCode;
+    @Setter @Getter
+    private String operationCode;
+    @Setter @Getter
+    private String groupCode;
+    @Setter @Getter
+    private String flowId;
+
+    @Setter @Getter
+    private String entrySignature;
+    @Setter @Getter
+    private String exitSignature;
+    @Setter @Getter
+    private AuditTrail auditTrail;
+    @Setter @Getter
+    private StatusEnum status;
+    @Setter @Getter
+    private Object response;
+
+    public AuditTrailContainer() {
+        this.start = now();
     }
 
-    public AuditTrailContainer(String flowCode, String operationCode, String flowId) {
+    public AuditTrailContainer(String groupCode, String flowCode, String flowId, String operationCode) {
+        this.groupCode = groupCode;
         this.flowCode = flowCode;
-        this.operationCode = operationCode;
         this.flowId = flowId;
+        this.operationCode = operationCode;
         this.start = now();
     }
 

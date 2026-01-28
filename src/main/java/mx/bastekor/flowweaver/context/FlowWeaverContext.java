@@ -9,6 +9,7 @@ import mx.bastekor.flowweaver.model.ThreadContainer;
 
 import static java.util.Optional.ofNullable;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_PREFIX;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.GROUP_CODE_PREFIX;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -62,33 +63,35 @@ public final class FlowWeaverContext {
         }
     }
 
-    public static BusinessLogContainer assignBusinessLogContainer(String operationCode) {
+    public static BusinessLogContainer assignBusinessLogContainer(final String inGroupCode, final String inOperationCode) {
 
         ThreadContainer threadContainer = getCurrentThreadContainer();
-
         BusinessLogContainer businessLogContainer;
 
-        if (isBlank(operationCode)) {
+        final String groupCode = isBlank(inGroupCode) ? generate(GROUP_CODE_PREFIX) : inGroupCode;
+        final String operationCode = isBlank(inOperationCode) ? generate(BUSINESS_LOG_PREFIX) : inOperationCode;
+
+        if (operationCode.startsWith(BUSINESS_LOG_PREFIX)) {
             // Buscar el "default" BL# y si no se encuentra, generar uno nuevo con default BL#
             businessLogContainer = ofNullable(threadContainer.getBusinessLogContainerDefault())
                     .stream()
                     .peek(blc -> log.warn("👨 [PADRASTRO] Recuperando BusinessLog automático: [{}|{}] para AuditTrail huérfano.",
                             blc.getOperationId(), blc.getOperationCode()))
                     .findFirst()
-                    .orElseGet(() -> createBusinessLogContainer(generate(BUSINESS_LOG_PREFIX)));
+                    .orElseGet(() -> createBusinessLogContainer(groupCode, operationCode));
         } else {
             // Si contiene operationCode "BusinessLog.operationCode" o "AuditTrail.flowCode"
             // Buscar BusinessLogContainer en el pool por su "operationCode", si no se encuentra creamos uno.
             businessLogContainer = ofNullable(threadContainer.getBusinessLogContainer(operationCode))
-                    .orElseGet(() -> createBusinessLogContainer(operationCode));
+                    .orElseGet(() -> createBusinessLogContainer(groupCode, operationCode));
 
         }
         return businessLogContainer;
     }
 
-    private static BusinessLogContainer createBusinessLogContainer(final String operationCode) {
+    private static BusinessLogContainer createBusinessLogContainer(final String groupCode, final String operationCode) {
         ThreadContainer threadContainer = getCurrentThreadContainer();
-        final BusinessLogContainer businessLogContainer = new BusinessLogContainer(operationCode);
+        final BusinessLogContainer businessLogContainer = new BusinessLogContainer(groupCode, operationCode);
         log.debug("🏁 [BusinessLog START] [{}|{}] | Thread: [{}|{}]",
                 businessLogContainer.getOperationId(),
                 businessLogContainer.getOperationCode(),

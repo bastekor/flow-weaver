@@ -19,10 +19,12 @@ public class BusinessLogContainer {
     private final String operationId;
     @Getter
     private final String operationCode;
+    @Getter
+    private final String groupCode;
     private final Instant start;
 
     @Setter @Getter
-    private String outputData;
+    private String exitSignature;
     @Setter @Getter
     private BusinessLog businessLog;
     @Setter @Getter
@@ -31,13 +33,10 @@ public class BusinessLogContainer {
     private Object response;
     private final List<AuditTrailContainer> auditTrails;
 
-    public BusinessLogContainer(String operationCode) {
-        this(operationCode, randomUUID().toString());
-    }
-
-    public BusinessLogContainer(String operationCode, String operationId) {
+    public BusinessLogContainer(String groupCode, String operationCode) {
+        this.groupCode = groupCode;
         this.operationCode = operationCode;
-        this.operationId = operationId;
+        this.operationId = randomUUID().toString();
         this.start = now();
         this.auditTrails = new ArrayList<>();
     }
