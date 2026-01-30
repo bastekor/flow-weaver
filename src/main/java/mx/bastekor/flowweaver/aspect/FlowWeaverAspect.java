@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.enums.StatusEnum;
+import mx.bastekor.flowweaver.exception.FlowWeaverException;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
@@ -75,8 +76,8 @@ public class FlowWeaverAspect {
 
             try {
                 businessLogAspectService.processBusinessLog(blc);
-            } catch (Exception exc) {
-                log.error("ERROR A TRATAR, NO ERROR DE FLOW SINO DE PROCESO - Error procesando BusinessLog: {}", exc.getMessage());
+            } catch (FlowWeaverException exc) {
+                log.error("Error procesando BusinessLog: {}", exc.getMessage());
                 // Deberemos de mandar a log datos iniciales mas errores de exc...
 
                 /*
@@ -116,7 +117,7 @@ public class FlowWeaverAspect {
         this.fillAuditTrailContainer(groupCode, flowCode, flowId, operationCode, auditTrail, atcIn);
         atcIn.setEntrySignature(mapArgs(joinPoint, maxDepth));
         addAuditTrailContainer(0, atcIn, blc);
-        businessLogAspectService.processAuditTrail(atcIn);
+       this.sendToPublish(atcIn);
 
         // Se crea el objeto de salida antes de invocar al método anotado para obtener duración.
         final AuditTrailContainer atcOut = new AuditTrailContainer();
@@ -128,8 +129,7 @@ public class FlowWeaverAspect {
         } catch (Throwable throwable) {
             status = FAILURE;
             response = throwable;
-            log.error(AUDIT_TRAIL_ERROR,
-                    atcOut.getOperationCode(), atcOut.getFlowId(),
+            log.error(AUDIT_TRAIL_ERROR, atcOut.getOperationCode(), atcOut.getFlowId(),
                     atcOut.getDuration(), throwable.getMessage(), throwable);
             throw throwable;
         } finally {
@@ -138,7 +138,7 @@ public class FlowWeaverAspect {
             atcOut.setResponse(response);
             atcOut.setStatus(status);
             addAuditTrailContainer(1, atcOut, blc);
-            businessLogAspectService.processAuditTrail(atcOut);
+            this.sendToPublish(atcOut);
 
             // Único para "BusinessLogContainer" por default, ya que elimina al BusinessLogContainer creado
             // temporalmente para este "huerfano".
@@ -156,5 +156,16 @@ public class FlowWeaverAspect {
         auditTrailContainer.setFlowId(flowId);
         auditTrailContainer.setOperationCode(operationCode);
         auditTrailContainer.setAuditTrail(auditTrail);
+    }
+
+    private void sendToPublish(final AuditTrailContainer auditTrailContainer) {
+        try {
+            businessLogAspectService.processAuditTrail(auditTrailContainer);
+        } catch (FlowWeaverException exception) {
+            log.error("Error procesando AuditTrail: {}", exception.getMessage());
+            /*
+            Aquí intentar mandar a procesar con datos primarios
+             */
+        }
     }
 }

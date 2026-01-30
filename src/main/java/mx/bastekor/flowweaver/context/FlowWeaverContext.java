@@ -21,7 +21,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class FlowWeaverContext {
 
-
     private static final InheritableThreadLocal<ThreadContainer> CURRENT_THREAD_CONTAINER =
             new InheritableThreadLocal<>();
 

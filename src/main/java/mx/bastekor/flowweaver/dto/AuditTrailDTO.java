@@ -1,7 +1,6 @@
 package mx.bastekor.flowweaver.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,7 +15,8 @@ import mx.bastekor.flowweaver.enums.Mode;
 public class AuditTrailDTO extends BusinessLogDTO {
     private String flowCode;
 
-    public AuditTrailDTO(String flowCode,
+    public AuditTrailDTO(String groupCode,
+                         String flowCode,
                          String operationCode,
                          String description,
                          String defaultDescription,
@@ -25,7 +25,7 @@ public class AuditTrailDTO extends BusinessLogDTO {
                          String exception,
                          String defaultException,
                          Mode mode) {
-        super(operationCode, description, defaultDescription, value, defaultValue, exception, defaultException, mode);
+        super(groupCode, operationCode, description, defaultDescription, value, defaultValue, exception, defaultException, mode);
         this.flowCode = flowCode;
     }
 }

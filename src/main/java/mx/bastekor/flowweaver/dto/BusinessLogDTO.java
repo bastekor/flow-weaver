@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 @AllArgsConstructor
 @ToString(callSuper = true)
 public class BusinessLogDTO extends DataParamsDTO {
+    private String groupCode;
     private String operationCode;
     private String description;
     private String defaultDescription;
@@ -29,6 +30,7 @@ public class BusinessLogDTO extends DataParamsDTO {
      */
     public String toPipeString() {
         final String pipe = "|";
+        // Ver si metemos al groupCode...
         return operationCode + pipe +
                 StringUtils.defaultIfBlank(this.description, this.defaultDescription) + pipe +
                 StringUtils.defaultIfBlank(this.value, this.defaultValue) +  pipe +

@@ -19,6 +19,7 @@ public final class AuditTrailMapper {
         }
 
         final AuditTrailDTO auditTrailDTO = new AuditTrailDTO(
+                trim(auditTrail.groupCode()),
                 trim(auditTrail.flowCode()),
                 trim(auditTrail.operationCode()),
                 trim(auditTrail.description()),

@@ -16,7 +16,6 @@ public class ThreadContainer {
     private final String threadId;
     @Getter
     private final String threadName;
-    // Key por flowId (único por instancia)
     private final Map<String, BusinessLogContainer> businessLogs;
 
     public ThreadContainer() {
@@ -25,8 +24,8 @@ public class ThreadContainer {
         this.businessLogs = new ConcurrentHashMap<>();
     }
 
-    // Ahora guardamos por flowId (no por operationCode)
     public void addBusinessLogContainer(final BusinessLogContainer businessLogContainer) {
+        // Ahora guardamos por flowId (no por operationCode), con esto evitamos eliminar o sobreescribir aquellos existentes
         businessLogs.put(businessLogContainer.getOperationId(), businessLogContainer);
     }
 
@@ -37,7 +36,8 @@ public class ThreadContainer {
     public BusinessLogContainer getBusinessLogContainer(final String operationCode) {
         // Buscar el último BusinessLogContainer con ese operationCode.
         // Si hay varios, devolvemos el que tenga la fecha/orden más reciente (lo último insertado).
-        return businessLogs.values().stream()
+        return businessLogs.values()
+                .stream()
                 .filter(bl -> operationCode.equals(bl.getOperationCode()))
                 // ordenar por start (si lo expones) o por flowId no es fiable; mejor tomar el último encontrado:
                 .reduce((first, second) -> second) // devuelve el último del stream
@@ -66,7 +66,8 @@ public class ThreadContainer {
      */
     public void clearBusinessLogContainer(final String operationCode) {
         // Encontrar el flowId del último que coincida y eliminarlo por flowId.
-        Optional<String> keyToRemove = businessLogs.entrySet().stream()
+        Optional<String> keyToRemove = businessLogs.entrySet()
+                .stream()
                 .filter(e -> operationCode.equals(e.getValue().getOperationCode()))
                 .map(Map.Entry::getKey)
                 .reduce((first, second) -> second); // el último

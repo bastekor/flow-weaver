@@ -27,6 +27,7 @@ public final class BusinessLogMapper {
         }
 
         BusinessLogDTO businessLogDTO = new BusinessLogDTO();
+        businessLogDTO.setGroupCode(trim(businessLog.groupCode()));
         businessLogDTO.setOperationCode(trim(businessLog.operationCode()));
         businessLogDTO.setDescription(trim(businessLog.description()));
         businessLogDTO.setDefaultDescription(trim(businessLog.defaultDescription()));

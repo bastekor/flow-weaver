@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_ERROR;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_ERROR;
 import static mx.bastekor.flowweaver.mapper.AuditTrailMapper.createAuditTrailDTO;
 import static mx.bastekor.flowweaver.mapper.BusinessLogMapper.createBusinessLogDTO;
@@ -84,7 +85,8 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
                 Cuando se mande una excepción (NullPointerException, IndexOutOfBoundsException, etc.) que no sea controlada
                 por nosotros y que se entienda se esté estimando mal la extracción de la data.
              */
-            log.info("Request: {}", requestDTO);
+            log.info("Request-BusinessLog: {}", requestDTO);
+            log.info("Config :: {}", businessLogConfig.getBusinessLogs());
         } catch (Exception e) {
             log.error(BUSINESS_ERROR, businessLogContainer.getStatus(), flowWeaverContextId, e.getMessage(), e);
         }
@@ -98,6 +100,46 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
         final Instant start = Instant.now();
         final AuditTrailDTO auditTrailDTO = createAuditTrailDTO(auditTrailContainer.getAuditTrail());
 //        final MethodContext methodContext = createMethodContext(joinPoint, null, null);
+        final String status = auditTrailContainer.getStatus() == null ? null : auditTrailContainer.getStatus().name();
+        final RequestDTO requestDTO = RequestDTO.builder()
+                .id(auditTrailContainer.getFlowId())
+                .flowCode(auditTrailDTO.getFlowCode())
+                .status(status)
+                .mode(auditTrailDTO.getMode().name())
+//                .data(new DataDTO()) // esto son valores reales finales
+                .build();
+
+        fillAppInfo(requestDTO, environment);
+        fillInfrastructureInfo(requestDTO, environment);
+        getHostNameAndIpAddress(requestDTO);
+
+        // temporal para pruebas
+        final String result = (auditTrailContainer.getEntrySignature() == null) ?
+                auditTrailContainer.getExitSignature() : auditTrailContainer.getEntrySignature();
+        requestDTO.setResult(result);
         final Instant end = Instant.now();
+
+        try {
+            // Aquí se invoca la lógica para recuperar data dinámicamente, si algo falla (lógica de negocio o lógica de programación)
+            // almacenar el tipo de error provocado, además de los pocos datos que se lograrón recuperar hasta el momento.
+
+            // Cabe mencionar que deberemos de generar algún objeto mutable el cual en los diferentes flujos se vaya actualizando
+            // con los datos que se recuperen. Con esto aseguramos que se están extrayendo la mayor cantidad de datos posibles y
+            // que sin importar en donde falle, se obtuvieron la mayoría posible.
+
+            /*
+            Ejemplo: Supongamos que debemos de entregar dentro de la lógica la extracción de todos los datos estáticos,
+            dinámicos y recuperados de donde sea, entonces:
+            1. Falla por lógica de negocio:
+                Cuando no logremos recuperar datos en alguno de los modos (STATIC, DYNAMIC, MERGED), etc.
+            2. Falla por lógica de programación:
+                Cuando se mande una excepción (NullPointerException, IndexOutOfBoundsException, etc.) que no sea controlada
+                por nosotros y que se entienda se esté estimando mal la extracción de la data.
+             */
+            log.info("Request-AuditTrail: {}", requestDTO);
+            log.info("Config :: {}", businessLogConfig.getAuditTrails());
+        } catch (Exception e) {
+            log.error(AUDIT_ERROR, auditTrailContainer.getStatus(), auditTrailContainer.getFlowId(), e.getMessage(), e);
+        }
     }
 }
