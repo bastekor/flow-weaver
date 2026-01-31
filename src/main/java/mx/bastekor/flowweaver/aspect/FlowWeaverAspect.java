@@ -27,8 +27,8 @@ import static mx.bastekor.flowweaver.context.FlowWeaverContext.addAuditTrailCont
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.assignBusinessLogContainer;
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.clearBusinessLogContainer;
 import static mx.bastekor.flowweaver.context.FlowWeaverContext.printRecursive;
-import static mx.bastekor.flowweaver.enums.StatusEnum.FAILURE;
-import static mx.bastekor.flowweaver.enums.StatusEnum.SUCCESS;
+import static mx.bastekor.flowweaver.enums.StatusEnum.SOURCE_FAILURE;
+import static mx.bastekor.flowweaver.enums.StatusEnum.SOURCE_SUCCESS;
 import static mx.bastekor.flowweaver.mapper.SafeSnapshotMapper.mapArgs;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -60,11 +60,11 @@ public class FlowWeaverAspect {
         StatusEnum status = null;
         Object response = null;
         try {
-            status = SUCCESS;
+            status = SOURCE_SUCCESS;
             response = joinPoint.proceed();
             return response;
         } catch (Throwable throwable) {
-            status = FAILURE;
+            status = SOURCE_FAILURE;
             response = throwable;
             log.error(BUSINESS_LOG_ERROR, blc.getOperationId(), blc.getOperationCode(), throwable.getMessage(), throwable);
             throw throwable;
@@ -105,8 +105,6 @@ public class FlowWeaverAspect {
         log.info(AUDIT_TRAIL_START);
 
         final AuditTrailContainer atcIn = new AuditTrailContainer();
-        StatusEnum status = null;
-        Object response = null;
 
         final BusinessLogContainer blc = assignBusinessLogContainer(auditTrail.groupCode(), auditTrail.flowCode());
         final String groupCode = blc.getGroupCode();
@@ -121,13 +119,14 @@ public class FlowWeaverAspect {
 
         // Se crea el objeto de salida antes de invocar al método anotado para obtener duración.
         final AuditTrailContainer atcOut = new AuditTrailContainer();
-
+        StatusEnum status = null;
+        Object response = null;
         try {
-            status = SUCCESS;
+            status = SOURCE_SUCCESS;
             response = joinPoint.proceed();
             return response;
         } catch (Throwable throwable) {
-            status = FAILURE;
+            status = SOURCE_FAILURE;
             response = throwable;
             log.error(AUDIT_TRAIL_ERROR, atcOut.getOperationCode(), atcOut.getFlowId(),
                     atcOut.getDuration(), throwable.getMessage(), throwable);

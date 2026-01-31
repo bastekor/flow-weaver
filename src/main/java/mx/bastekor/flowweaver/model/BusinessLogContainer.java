@@ -62,4 +62,8 @@ public class BusinessLogContainer {
     public int getAuditTrailCount() {
         return auditTrails.size();
     }
+
+    public int getB() {
+        return 0;
+    }
 }

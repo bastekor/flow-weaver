@@ -1,18 +1,14 @@
 {
   "request_id": "12345-67890-12345-67890",
+  "group_code": "G-123",
   "flow_code": "FL-123",
   "description": "Registrar pedido",
   "status": "SUCCESS",
-  "result": "OK", // aquí el valor de value o exception
+  "result": "OK|FAILURE|EXCEPTION|ERROR", // aquí el valor de value o exception
   "mode": "STATIC",
   "data": {
-    "in": [
-      {"key": "userId", "value": 42},
-      {"key": "productId", "value": 1001}
-    ],
-    "out": [
-      {"key": "orderId", "value": 987}
-    ],
-    "in-out": []
+    "in": {"key": "value"},
+    "out": {"key": "value"},
+    "in-out": {"key": "value"}
   }
 }

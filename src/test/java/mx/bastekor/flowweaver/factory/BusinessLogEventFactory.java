@@ -13,7 +13,7 @@ import java.util.List;
 public class BusinessLogEventFactory {
     public static BusinessLogEvent create() {
         return new BusinessLogEvent()
-                .setStatus(StatusEnum.SUCCESS)
+                .setStatus(StatusEnum.SOURCE_SUCCESS)
                 .setFlowWeaverContextId("flow-weaver-context-id")
                 .setDuration("100 s")
                 .setMethodContext(createMethodContext())

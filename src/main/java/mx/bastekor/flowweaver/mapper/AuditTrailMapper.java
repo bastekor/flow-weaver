@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.dto.AuditTrailDTO;
+import mx.bastekor.flowweaver.model.AuditTrailContainer;
 
 import static mx.bastekor.flowweaver.mapper.DataParamMapper.createDataParamsDTO;
 import static org.apache.commons.lang3.StringUtils.trim;
@@ -13,26 +14,30 @@ public final class AuditTrailMapper {
 
     private static final String AUDIT_TRAIL_PREFIX = "AT#";
 
-    public static AuditTrailDTO createAuditTrailDTO(AuditTrail auditTrail) {
-        if (auditTrail == null) {
+    public static AuditTrailDTO createAuditTrailDTO(AuditTrailContainer auditTrailContainer) {
+
+        if (auditTrailContainer == null) {
             return null;
         }
 
-        final AuditTrailDTO auditTrailDTO = new AuditTrailDTO(
-                trim(auditTrail.groupCode()),
-                trim(auditTrail.flowCode()),
-                trim(auditTrail.operationCode()),
-                trim(auditTrail.description()),
-                trim(auditTrail.defaultDescription()),
-                trim(auditTrail.value()),
-                trim(auditTrail.defaultValue()),
-                trim(auditTrail.exception()),
-                trim(auditTrail.defaultException()),
-                auditTrail.mode());
+        if (auditTrailContainer.getAuditTrail() == null) {
+            return null;
+        }
 
-        auditTrailDTO.setDataIn(createDataParamsDTO(auditTrail.dataIn()));
-        auditTrailDTO.setDataOut(createDataParamsDTO(auditTrail.dataOut()));
-        auditTrailDTO.setDataInOut(createDataParamsDTO(auditTrail.dataInOut()));
+        final AuditTrailDTO auditTrailDTO = new AuditTrailDTO();
+        auditTrailDTO.setGroupCode(auditTrailContainer.getGroupCode());
+        auditTrailDTO.setFlowCode(auditTrailContainer.getFlowCode());
+        auditTrailDTO.setOperationCode(auditTrailContainer.getOperationCode());
+        auditTrailDTO.setDescription(trim(auditTrailContainer.getAuditTrail().description()));
+        auditTrailDTO.setDefaultDescription(trim(auditTrailContainer.getAuditTrail().defaultDescription()));
+        auditTrailDTO.setValue(trim(auditTrailContainer.getAuditTrail().value()));
+        auditTrailDTO.setDefaultValue(trim(auditTrailContainer.getAuditTrail().defaultValue()));
+        auditTrailDTO.setException(trim(auditTrailContainer.getAuditTrail().exception()));
+        auditTrailDTO.setDefaultException(trim(auditTrailContainer.getAuditTrail().defaultException()));
+        auditTrailDTO.setMode(auditTrailContainer.getAuditTrail().mode());
+        auditTrailDTO.setDataIn(createDataParamsDTO(auditTrailContainer.getAuditTrail().dataIn()));
+        auditTrailDTO.setDataOut(createDataParamsDTO(auditTrailContainer.getAuditTrail().dataOut()));
+        auditTrailDTO.setDataInOut(createDataParamsDTO(auditTrailContainer.getAuditTrail().dataInOut()));
 
         return auditTrailDTO;
     }
