@@ -26,9 +26,9 @@ public class AuditTrailContainer {
     private String flowId;
 
     @Setter @Getter
-    private String entrySignature;
+    private String entrySignature; // firma de entrada del metodo
     @Setter @Getter
-    private String exitSignature;
+    private String exitSignature; // firma de salida del metodo
     @Setter @Getter
     private AuditTrail auditTrail;
     @Setter @Getter

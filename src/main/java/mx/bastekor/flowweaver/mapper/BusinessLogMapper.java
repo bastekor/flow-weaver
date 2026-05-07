@@ -23,11 +23,7 @@ public final class BusinessLogMapper {
      */
     public static BusinessLogDTO createBusinessLogDTO(final BusinessLogContainer businessLogContainer) {
 
-        if (businessLogContainer == null) {
-            return null;
-        }
-
-        if (businessLogContainer.getBusinessLog() == null) {
+        if (businessLogContainer == null || businessLogContainer.getBusinessLog() == null) {
             return null;
         }
 

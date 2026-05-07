@@ -11,7 +11,7 @@ import static java.util.Optional.ofNullable;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_PREFIX;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.GROUP_CODE_PREFIX;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
-import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 
 /**
  * Contexto para mantener el BusinessLog actual en cada thread
@@ -67,8 +67,8 @@ public final class FlowWeaverContext {
         ThreadContainer threadContainer = getCurrentThreadContainer();
         BusinessLogContainer businessLogContainer;
 
-        final String groupCode = isBlank(inGroupCode) ? generate(GROUP_CODE_PREFIX) : inGroupCode;
-        final String operationCode = isBlank(inOperationCode) ? generate(BUSINESS_LOG_PREFIX) : inOperationCode;
+        final String groupCode = defaultIfBlank(inGroupCode, generate(GROUP_CODE_PREFIX));
+        final String operationCode = defaultIfBlank(inOperationCode, generate(BUSINESS_LOG_PREFIX));
 
         if (operationCode.startsWith(BUSINESS_LOG_PREFIX)) {
             // Buscar el "default" BL# y si no se encuentra, generar uno nuevo con default BL#

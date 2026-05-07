@@ -52,7 +52,8 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
         final BusinessLogDTO businessLogDTO = this.getBusinessLogDTO(businessLogContainer);
 
         final RequestDTO requestDTO = RequestDTO.builder()
-                .id(businessLogContainer.getOperationCode())
+                .id(businessLogContainer.getOperationId())
+                .groupCode(businessLogDTO.getGroupCode())
                 .flowCode(businessLogDTO.getOperationCode())
                 .status(businessLogContainer.getStatus().name())
                 .mode(businessLogDTO.getMode().name())
