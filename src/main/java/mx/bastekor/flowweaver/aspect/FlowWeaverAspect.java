@@ -104,7 +104,7 @@ public class FlowWeaverAspect {
     public Object aroundAuditTrail(ProceedingJoinPoint joinPoint, AuditTrail auditTrail) throws Throwable {
         log.info(AUDIT_TRAIL_START);
 
-        final AuditTrailContainer atcIn = new AuditTrailContainer();
+        final AuditTrailContainer inAuditTrailContainer = new AuditTrailContainer();
 
         final BusinessLogContainer blc = assignBusinessLogContainer(auditTrail.groupCode(), auditTrail.flowCode());
         final String groupCode = blc.getGroupCode();
@@ -112,13 +112,13 @@ public class FlowWeaverAspect {
         final String flowId = blc.getOperationId();
         final String operationCode = isBlank(auditTrail.operationCode()) ? generate(AUDIT_TRAIL_PREFIX) : auditTrail.operationCode();
 
-        this.fillAuditTrailContainer(groupCode, flowCode, flowId, operationCode, auditTrail, atcIn);
-        atcIn.setEntrySignature(mapArgs(joinPoint, maxDepth));
-        addAuditTrailContainer(0, atcIn, blc);
-       this.sendToPublish(atcIn);
+        this.fillAuditTrailContainer(groupCode, flowCode, flowId, operationCode, auditTrail, inAuditTrailContainer);
+        inAuditTrailContainer.setEntrySignature(mapArgs(joinPoint, maxDepth));
+        addAuditTrailContainer(true, inAuditTrailContainer, blc);
+       this.sendToPublish(inAuditTrailContainer);
 
         // Se crea el objeto de salida antes de invocar al método anotado para obtener duración.
-        final AuditTrailContainer atcOut = new AuditTrailContainer();
+        final AuditTrailContainer outAuditTrailContainer = new AuditTrailContainer();
         StatusEnum status = null;
         Object response = null;
         try {
@@ -128,16 +128,16 @@ public class FlowWeaverAspect {
         } catch (Throwable throwable) {
             status = SOURCE_FAILURE;
             response = throwable;
-            log.error(AUDIT_TRAIL_ERROR, atcOut.getOperationCode(), atcOut.getFlowId(),
-                    atcOut.getDuration(), throwable.getMessage(), throwable);
+            log.error(AUDIT_TRAIL_ERROR, outAuditTrailContainer.getOperationCode(), outAuditTrailContainer.getFlowId(),
+                    outAuditTrailContainer.getDuration(), throwable.getMessage(), throwable);
             throw throwable;
         } finally {
-            this.fillAuditTrailContainer(groupCode, flowCode, flowId, operationCode, auditTrail, atcOut);
-            atcOut.setExitSignature(mapArgs(joinPoint, maxDepth));
-            atcOut.setResponse(response);
-            atcOut.setStatus(status);
-            addAuditTrailContainer(1, atcOut, blc);
-            this.sendToPublish(atcOut);
+            this.fillAuditTrailContainer(groupCode, flowCode, flowId, operationCode, auditTrail, outAuditTrailContainer);
+            outAuditTrailContainer.setExitSignature(mapArgs(joinPoint, maxDepth));
+            outAuditTrailContainer.setResponse(response);
+            outAuditTrailContainer.setStatus(status);
+            addAuditTrailContainer(false, outAuditTrailContainer, blc);
+            this.sendToPublish(outAuditTrailContainer);
 
             // Único para "BusinessLogContainer" por default, ya que elimina al BusinessLogContainer creado
             // temporalmente para este "huerfano".

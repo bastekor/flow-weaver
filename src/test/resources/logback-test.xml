@@ -8,7 +8,7 @@
     </appender>
 
     <!-- DEBUG para tu paquete -->
-    <logger name="mx.bastekor.flowweaver" level="DEBUG" additivity="false">
+    <logger name="mx.bastekor.flowweaver" level="INFO" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 

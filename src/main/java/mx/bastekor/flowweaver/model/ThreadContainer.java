@@ -33,27 +33,25 @@ public class ThreadContainer {
      * Obtiene el objeto {@link BusinessLogContainer} mediante el {@code operationCode} recibido.
      * Ahora busca entre los values y devuelve el más "reciente" (último creado) si existen varios.
      */
-    public BusinessLogContainer getBusinessLogContainer(final String operationCode) {
+    public Optional<BusinessLogContainer> getBusinessLogContainer(final String operationCode) {
         // Buscar el último BusinessLogContainer con ese operationCode.
         // Si hay varios, devolvemos el que tenga la fecha/orden más reciente (lo último insertado).
         return businessLogs.values()
                 .stream()
                 .filter(bl -> operationCode.equals(bl.getOperationCode()))
                 // ordenar por start (si lo expones) o por flowId no es fiable; mejor tomar el último encontrado:
-                .reduce((first, second) -> second) // devuelve el último del stream
-                .orElse(null);
+                .reduce((first, second) -> second); // devuelve el último del stream
     }
 
     /**
      * Método encargado de buscar el {@code BusinessLogContainer} por defecto que es el
      * único que inicia con el {@code operationCode} por el prefijo "BL#".
      */
-    public BusinessLogContainer getBusinessLogContainerDefault() {
+    public Optional<BusinessLogContainer> getBusinessLogContainerDefault() {
         return businessLogs.values()
                 .stream()
                 .filter(bl -> bl.getOperationCode().startsWith(BUSINESS_LOG_PREFIX))
-                .findFirst()
-                .orElse(null);
+                .findFirst();
     }
 
     public List<BusinessLogContainer> getAllBusinessLogContainer() {
