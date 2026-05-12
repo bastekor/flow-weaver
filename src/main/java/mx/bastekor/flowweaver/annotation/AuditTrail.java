@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
  *
  * <p><b>Expresiones y valores por defecto:</b></p>
  * <ul>
- *   <li>Las propiedades como {@code value}, {@code exception}, {@code description}, etc.,
+ *   <li>Las propiedades como {@code value}, {@code exception}, {@code description}, etc,
  *   pueden contener expresiones que se evaluarán contra el contexto del método.</li>
  *   <li>Si no se pueden resolver en tiempo de ejecución, se utilizarán los valores de respaldo:
  *   {@code defaultValue}, {@code defaultException}, {@code defaultDescription}, etc.</li>
@@ -81,20 +81,20 @@ import java.lang.annotation.Target;
 public @interface AuditTrail {
 
     /**
-     * Código grupal de flujo funcional (groupCode) proporcionado por negocio.
+     * Código grupal de flujo funcional (group) proporcionado por negocio.
      * Si no se especifica o no se resuelve, el sistema puede inferir un identificador
      * por default (GC#XXXX-XXXX).
      */
-    String groupCode() default "";
+    String group() default "";
 
     /**
      * Código de operación relacionado del contexto {@code @BusinessLog}, si aplica.
      * Permite establecer trazabilidad cruzada entre ambos mecanismos.
      */
-    String flowCode() default "";
+    String parentCode() default "";
 
     /**
-     * Código del flujo funcional (operationCode) proporcionado por negocio.
+     * Código del flujo funcional (code) proporcionado por negocio.
      * <p>
      * Puede ser:
      * - Una expresión que se evalúa desde la configuración externa (ligada al Custom Dev Code).
@@ -103,7 +103,7 @@ public @interface AuditTrail {
      * Si no se especifica o no se resuelve, el sistema puede inferir un identificador
      * por default (AT#XXXX-XXXX).
      */
-    String operationCode() default "";
+    String code() default "";
 
     /**
      * Descripción del flujo funcional.

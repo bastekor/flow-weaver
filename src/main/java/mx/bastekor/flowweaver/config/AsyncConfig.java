@@ -24,7 +24,6 @@ public class AsyncConfig {
         executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("flow-weaver-");
 
-        // ⭐ IMPORTANTE: TaskDecorator para propagar el contexto
         executor.setTaskDecorator(new FlowWeaverTaskDecorator());
 
         executor.initialize();

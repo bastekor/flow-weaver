@@ -52,12 +52,12 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
         final BusinessLogDTO businessLogDTO = this.getBusinessLogDTO(businessLogContainer);
 
         final RequestDTO requestDTO = RequestDTO.builder()
-                .id(businessLogContainer.getOperationId())
+                .id(businessLogContainer.getId())
                 .groupCode(businessLogDTO.getGroupCode())
                 .flowCode(businessLogDTO.getOperationCode())
                 .status(businessLogContainer.getStatus().name())
                 .mode(businessLogDTO.getMode().name())
-//                .data(new DataDTO()) // esto son valores reales finales del mapa data-out
+//                .data(new DataDTO()) // esto son valores reales (resueltos, no expresiones) finales del mapa data-out
                 .build();
 
         fillAppInfo(requestDTO, environment);
@@ -91,7 +91,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
             log.info("Request-BusinessLog: {}", requestDTO);
             log.info("Config :: {}", businessLogConfig.getBusinessLogs());
         } catch (Exception e) {
-            log.error(BUSINESS_ERROR, businessLogContainer.getStatus(), businessLogContainer.getOperationCode(), e.getMessage(), e);
+            log.error(BUSINESS_ERROR, businessLogContainer.getStatus(), businessLogContainer.getCode(), e.getMessage(), e);
         }
     }
 
@@ -105,7 +105,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
 //        final MethodContext methodContext = createMethodContext(joinPoint, null, null);
         final String status = auditTrailContainer.getStatus() == null ? null : auditTrailContainer.getStatus().name();
         final RequestDTO requestDTO = RequestDTO.builder()
-                .id(auditTrailContainer.getFlowId())
+                .id(auditTrailContainer.getCorrelationId())
                 .flowCode(auditTrailDTO.getFlowCode())
                 .status(status)
                 .mode(auditTrailDTO.getMode().name())
@@ -142,7 +142,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
             log.info("Request-AuditTrail: {}", requestDTO);
             log.info("Config :: {}", businessLogConfig.getAuditTrails());
         } catch (Exception e) {
-            log.error(AUDIT_ERROR, auditTrailContainer.getStatus(), auditTrailContainer.getFlowId(), e.getMessage(), e);
+            log.error(AUDIT_ERROR, auditTrailContainer.getStatus(), auditTrailContainer.getCorrelationId(), e.getMessage(), e);
         }
     }
 
@@ -161,7 +161,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
 
         BusinessLogDTO blStatic = createBusinessLogDTO(businessLogContainer);
         BusinessLogDTO blDynamic = Optional.ofNullable(businessLogConfig.getBusinessLogs())
-                .map(bl -> bl.get(businessLogContainer.getOperationCode()))
+                .map(bl -> bl.get(businessLogContainer.getCode()))
                 .orElse(null);
 
         return switch (businessLogContainer.getBusinessLog().mode()) {
@@ -184,7 +184,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
     private AuditTrailDTO getAuditTrailDTO(final AuditTrailContainer auditTrailContainer) {
         AuditTrailDTO atStatic = createAuditTrailDTO(auditTrailContainer);
         AuditTrailDTO atDynamic = Optional.ofNullable(businessLogConfig.getAuditTrails())
-                .map(at -> at.get(auditTrailContainer.getOperationCode()))
+                .map(at -> at.get(auditTrailContainer.getCode()))
                 .orElse(null);
 
         return switch (auditTrailContainer.getAuditTrail().mode()) {

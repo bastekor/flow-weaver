@@ -67,8 +67,8 @@ class FlowWeaverAspectAuditTrailTest {
         // Arrange
         Method method = TestComponent.class.getMethod("doAudit001");
         AuditTrail annotation = this.getAuditTrailAnnotation(method);
-        assertEquals(EMPTY, annotation.flowCode());
-        assertEquals(EMPTY, annotation.operationCode());
+        assertEquals(EMPTY, annotation.parentCode());
+        assertEquals(EMPTY, annotation.code());
         assertEquals(EMPTY, annotation.description());
         assertEquals(EMPTY, annotation.defaultDescription());
         assertEquals(EMPTY, annotation.value());
@@ -89,12 +89,12 @@ class FlowWeaverAspectAuditTrailTest {
     }
 
     @Test
-    void aroundAuditTrail_withFlowCode() throws Throwable {
+    void aroundAuditTrail_withParentCode() throws Throwable {
         // Arrange
         Method method = TestComponent.class.getMethod("doAudit002", String.class);
         AuditTrail annotation = this.getAuditTrailAnnotation(method);
-        assertEquals("MX-001", annotation.flowCode());
-        assertEquals("AUDIT-001", annotation.operationCode());
+        assertEquals("MX-001", annotation.parentCode());
+        assertEquals("AUDIT-001", annotation.code());
         assertEquals(EMPTY, annotation.description());
         assertEquals(EMPTY, annotation.defaultDescription());
         assertEquals(EMPTY, annotation.value());
@@ -309,7 +309,7 @@ class FlowWeaverAspectAuditTrailTest {
             return "Audit OK";
         }
 
-        @AuditTrail(flowCode = "MX-001", operationCode = "AUDIT-001", mode = DYNAMIC)
+        @AuditTrail(parentCode = "MX-001", code = "AUDIT-001", mode = DYNAMIC)
         public void doAudit002(String param) {
         }
 
@@ -359,17 +359,17 @@ class FlowWeaverAspectAuditTrailTest {
 
         // Combinaciones adicionales para cubrir todos los parámetros posibles
 
-        @AuditTrail(flowCode = "FC-001", operationCode = "OP-001", description = "Test operation", defaultDescription = "Default operation")
+        @AuditTrail(parentCode = "FC-001", code = "OP-001", description = "Test operation", defaultDescription = "Default operation")
         public String doAuditWithFlowCodeAndOperationCodeAndDescription() {
             return "OK";
         }
 
-        @AuditTrail(flowCode = "FC-002", operationCode = "OP-002", value = "result", defaultValue = "Default result")
+        @AuditTrail(parentCode = "FC-002", code = "OP-002", value = "result", defaultValue = "Default result")
         public String doAuditWithFlowCodeAndOperationCodeAndValue() {
             return "OK";
         }
 
-        @AuditTrail(flowCode = "FC-003", operationCode = "OP-003", exception = "ex.message", defaultException = "Default exception")
+        @AuditTrail(parentCode = "FC-003", code = "OP-003", exception = "ex.message", defaultException = "Default exception")
         public String doAuditWithFlowCodeAndOperationCodeAndException() {
             return "OK";
         }
@@ -389,13 +389,13 @@ class FlowWeaverAspectAuditTrailTest {
             return "OK";
         }
 
-        @AuditTrail(flowCode = "FC-004", operationCode = "OP-004", description = "Test", value = "result", exception = "ex.message",
+        @AuditTrail(parentCode = "FC-004", code = "OP-004", description = "Test", value = "result", exception = "ex.message",
                 defaultDescription = "Default desc", defaultValue = "Default val", defaultException = "Default ex")
         public String doAuditWithAllParameters() {
             return "OK";
         }
 
-        @AuditTrail(mode = Mode.DYNAMIC, flowCode = "FC-005", operationCode = "OP-005")
+        @AuditTrail(mode = Mode.DYNAMIC, parentCode = "FC-005", code = "OP-005")
         public String doAuditWithDynamicMode() {
             return "OK";
         }
@@ -453,12 +453,12 @@ class FlowWeaverAspectAuditTrailTest {
             return "OK";
         }
 
-        @AuditTrail(flowCode = "FC-006", operationCode = "OP-006", description = "Test with null args")
+        @AuditTrail(parentCode = "FC-006", code = "OP-006", description = "Test with null args")
         public String doAuditWithNullArgs(String param1, String param2) {
             return "OK";
         }
 
-        @AuditTrail(flowCode = "FC-007", operationCode = "OP-007", description = "Test with empty args")
+        @AuditTrail(parentCode = "FC-007", code = "OP-007", description = "Test with empty args")
         public String doAuditWithEmptyArgs(String param1, String param2) {
             return "OK";
         }

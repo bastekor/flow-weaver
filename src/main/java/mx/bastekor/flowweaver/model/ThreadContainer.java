@@ -13,34 +13,33 @@ import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_P
 public class ThreadContainer {
 
     @Getter
-    private final String threadId;
+    private final String id;
     @Getter
-    private final String threadName;
+    private final String name;
+    @Getter
+    private final String correlationId;
     private final Map<String, BusinessLogContainer> businessLogs;
 
     public ThreadContainer() {
-        this.threadId = UUID.randomUUID().toString();
-        this.threadName = Thread.currentThread().getName();
+        this.id = UUID.randomUUID().toString();
+        this.name = Thread.currentThread().getName();
+        this.correlationId = UUID.randomUUID().toString();
         this.businessLogs = new ConcurrentHashMap<>();
     }
 
     public void addBusinessLogContainer(final BusinessLogContainer businessLogContainer) {
-        // Ahora guardamos por flowId (no por operationCode), con esto evitamos eliminar o sobreescribir aquellos existentes
-        businessLogs.put(businessLogContainer.getOperationId(), businessLogContainer);
+        businessLogs.put(businessLogContainer.getId(), businessLogContainer);
     }
 
     /**
-     * Obtiene el objeto {@link BusinessLogContainer} mediante el {@code operationCode} recibido.
+     * Obtiene el objeto {@link BusinessLogContainer} mediante el {@code code} recibido.
      * Ahora busca entre los values y devuelve el más "reciente" (último creado) si existen varios.
      */
-    public Optional<BusinessLogContainer> getBusinessLogContainer(final String operationCode) {
-        // Buscar el último BusinessLogContainer con ese operationCode.
-        // Si hay varios, devolvemos el que tenga la fecha/orden más reciente (lo último insertado).
+    public Optional<BusinessLogContainer> getBusinessLogContainer(final String code) {
         return businessLogs.values()
                 .stream()
-                .filter(bl -> operationCode.equals(bl.getOperationCode()))
-                // ordenar por start (si lo expones) o por flowId no es fiable; mejor tomar el último encontrado:
-                .reduce((first, second) -> second); // devuelve el último del stream
+                .filter(bl -> code.equals(bl.getCode()))
+                .findFirst();
     }
 
     /**
@@ -50,8 +49,8 @@ public class ThreadContainer {
     public Optional<BusinessLogContainer> getBusinessLogContainerDefault() {
         return businessLogs.values()
                 .stream()
-                .filter(bl -> bl.getOperationCode().startsWith(BUSINESS_LOG_PREFIX))
-                .findFirst();
+                .filter(bl -> bl.getCode().startsWith(BUSINESS_LOG_PREFIX))
+                .reduce((first, second) -> second);
     }
 
     public List<BusinessLogContainer> getAllBusinessLogContainer() {
@@ -59,14 +58,13 @@ public class ThreadContainer {
     }
 
     /**
-     * Borra el BusinessLogContainer por operationCode (compatibilidad con API actual).
-     * Si hay varios con el mismo operationCode elimina el último (el más "reciente").
+     * Borra el BusinessLogContainer por code (compatibilidad con API actual).
+     * Si hay varios con el mismo code elimina el último (el más "reciente").
      */
-    public void clearBusinessLogContainer(final String operationCode) {
-        // Encontrar el flowId del último que coincida y eliminarlo por flowId.
+    public void clearBusinessLogContainer(final String code) {
         Optional<String> keyToRemove = businessLogs.entrySet()
                 .stream()
-                .filter(e -> operationCode.equals(e.getValue().getOperationCode()))
+                .filter(e -> code.equals(e.getValue().getCode()))
                 .map(Map.Entry::getKey)
                 .reduce((first, second) -> second); // el último
         keyToRemove.ifPresent(businessLogs::remove);

@@ -63,11 +63,11 @@ import mx.bastekor.flowweaver.enums.Mode;
 public @interface BusinessLog {
 
     /**
-     * Código grupal de flujo funcional (groupCode) proporcionado por negocio.
+     * Código grupal de flujo funcional (group) proporcionado por negocio.
      * Si no se especifica o no se resuelve, el sistema puede inferir un identificador
      * por default (GC#XXXX-XXXX).
      */
-    String groupCode() default "";
+    String group() default "";
 
     /**
      * Código del flujo funcional (operationCode) proporcionado por negocio.
@@ -79,7 +79,7 @@ public @interface BusinessLog {
      * Si no se especifica o no se resuelve, el sistema puede inferir un identificador
      * por default (BL#XXXX-XXXX).
      */
-    String operationCode() default "";
+    String code() default "";
 
     /**
      * Descripción del flujo funcional.

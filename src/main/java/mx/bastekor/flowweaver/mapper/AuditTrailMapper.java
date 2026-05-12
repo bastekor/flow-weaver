@@ -2,7 +2,6 @@ package mx.bastekor.flowweaver.mapper;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.dto.AuditTrailDTO;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 
@@ -25,9 +24,9 @@ public final class AuditTrailMapper {
         }
 
         final AuditTrailDTO auditTrailDTO = new AuditTrailDTO();
-        auditTrailDTO.setGroupCode(auditTrailContainer.getGroupCode());
-        auditTrailDTO.setFlowCode(auditTrailContainer.getFlowCode());
-        auditTrailDTO.setOperationCode(auditTrailContainer.getOperationCode());
+        auditTrailDTO.setGroupCode(auditTrailContainer.getGroup());
+        auditTrailDTO.setFlowCode(auditTrailContainer.getParentCode());
+        auditTrailDTO.setOperationCode(auditTrailContainer.getCode());
         auditTrailDTO.setDescription(trim(auditTrailContainer.getAuditTrail().description()));
         auditTrailDTO.setDefaultDescription(trim(auditTrailContainer.getAuditTrail().defaultDescription()));
         auditTrailDTO.setValue(trim(auditTrailContainer.getAuditTrail().value()));

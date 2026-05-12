@@ -31,7 +31,7 @@ import static mx.bastekor.flowweaver.enums.StatusEnum.SOURCE_FAILURE;
 import static mx.bastekor.flowweaver.enums.StatusEnum.SOURCE_SUCCESS;
 import static mx.bastekor.flowweaver.mapper.SafeSnapshotMapper.mapArgs;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
-import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 
 @Slf4j
 @Aspect
@@ -56,7 +56,7 @@ public class FlowWeaverAspect {
     public Object aroundBusinessLog(ProceedingJoinPoint joinPoint, BusinessLog businessLog) throws Throwable {
         log.info(BUSINESS_LOG_START);
 
-        final BusinessLogContainer blc = assignBusinessLogContainer(businessLog.groupCode(), businessLog.operationCode());
+        final BusinessLogContainer blc = assignBusinessLogContainer(businessLog.group(), businessLog.code());
         StatusEnum status = null;
         Object response = null;
         try {
@@ -66,32 +66,16 @@ public class FlowWeaverAspect {
         } catch (Throwable throwable) {
             status = SOURCE_FAILURE;
             response = throwable;
-            log.error(BUSINESS_LOG_ERROR, blc.getOperationId(), blc.getOperationCode(), throwable.getMessage(), throwable);
+            log.error(BUSINESS_LOG_ERROR, blc.getId(), blc.getCode(), throwable.getMessage(), throwable);
             throw throwable;
         } finally {
             blc.setStatus(status);
             blc.setResponse(response);
             blc.setExitSignature(mapArgs(joinPoint, maxDepth));
             blc.setBusinessLog(businessLog);
-
-            try {
-                businessLogAspectService.processBusinessLog(blc);
-            } catch (FlowWeaverException exc) {
-                log.error("Error procesando BusinessLog: {}", exc.getMessage());
-                // Deberemos de mandar a log datos iniciales mas errores de exc...
-
-                /*
-                 * Aquí se podrá aplicar alguna lógica que permita el envío de datos de entrada y la búsqueda recursiva de las
-                 * excepciones anidadas. Quizás con el tiempo se puede implementar algún método que permita saber que datos se
-                 * fueron tomando y que datos no, pero eso solo será informativo para mantenimiento de esta dependencia, ya que
-                 * errores en lógica interna de como se maneja "x" o "y" cosa es tema propio que no debe de afectar la legibilidad
-                 * de la traza que se llegue a mandar, mas bien deberá de complementarla.
-                 */
-            }
-
+            this.sendToPublish(blc);
             printRecursive(bool);
-            // Eliminar BusinessLogContainer del contexto del thread.
-            clearBusinessLogContainer(blc.getOperationCode());
+            clearBusinessLogContainer(blc.getCode());
             log.info(BUSINESS_LOG_END, status);
         }
     }
@@ -106,16 +90,16 @@ public class FlowWeaverAspect {
 
         final AuditTrailContainer inAuditTrailContainer = new AuditTrailContainer();
 
-        final BusinessLogContainer blc = assignBusinessLogContainer(auditTrail.groupCode(), auditTrail.flowCode());
-        final String groupCode = blc.getGroupCode();
-        final String flowCode = blc.getOperationCode();
-        final String flowId = blc.getOperationId();
-        final String operationCode = isBlank(auditTrail.operationCode()) ? generate(AUDIT_TRAIL_PREFIX) : auditTrail.operationCode();
+        final BusinessLogContainer blc = assignBusinessLogContainer(auditTrail.group(), auditTrail.parentCode());
+        final String blcGroup = blc.getGroup();
+        final String blcCode = blc.getCode();
+        final String blcCorrelationId = blc.getCorrelationId();
+        final String code = defaultIfBlank(auditTrail.code(), generate(AUDIT_TRAIL_PREFIX));
 
-        this.fillAuditTrailContainer(groupCode, flowCode, flowId, operationCode, auditTrail, inAuditTrailContainer);
+        this.fillAuditTrailContainer(blcGroup, blcCode, blcCorrelationId, code, auditTrail, inAuditTrailContainer);
         inAuditTrailContainer.setEntrySignature(mapArgs(joinPoint, maxDepth));
         addAuditTrailContainer(true, inAuditTrailContainer, blc);
-       this.sendToPublish(inAuditTrailContainer);
+        this.sendToPublish(inAuditTrailContainer);
 
         // Se crea el objeto de salida antes de invocar al método anotado para obtener duración.
         final AuditTrailContainer outAuditTrailContainer = new AuditTrailContainer();
@@ -128,40 +112,58 @@ public class FlowWeaverAspect {
         } catch (Throwable throwable) {
             status = SOURCE_FAILURE;
             response = throwable;
-            log.error(AUDIT_TRAIL_ERROR, outAuditTrailContainer.getOperationCode(), outAuditTrailContainer.getFlowId(),
-                    outAuditTrailContainer.getDuration(), throwable.getMessage(), throwable);
+            log.error(AUDIT_TRAIL_ERROR, blcCorrelationId, code, outAuditTrailContainer.getDuration(),
+                    throwable.getMessage(), throwable);
             throw throwable;
         } finally {
-            this.fillAuditTrailContainer(groupCode, flowCode, flowId, operationCode, auditTrail, outAuditTrailContainer);
+            this.fillAuditTrailContainer(blcGroup, blcCode, blcCorrelationId, code, auditTrail, outAuditTrailContainer);
             outAuditTrailContainer.setExitSignature(mapArgs(joinPoint, maxDepth));
             outAuditTrailContainer.setResponse(response);
             outAuditTrailContainer.setStatus(status);
             addAuditTrailContainer(false, outAuditTrailContainer, blc);
             this.sendToPublish(outAuditTrailContainer);
 
-            // Único para "BusinessLogContainer" por default, ya que elimina al BusinessLogContainer creado
-            // temporalmente para este "huerfano".
-            if (isBlank(auditTrail.flowCode())) {
-                clearBusinessLogContainer(blc.getOperationCode());
-            }
+            clearBusinessLogContainer(blcCode);
+//            // Único para "BusinessLogContainer" por default, ya que elimina al BusinessLogContainer creado
+//            // temporalmente para este "huerfano".
+//            if (isBlank(auditTrail.parentCode())) {
+//                clearBusinessLogContainer(blc.getCode());
+//            }
             log.info(AUDIT_TRAIL_END, status);
         }
     }
 
-    private void fillAuditTrailContainer(String groupCode, String flowCode, String flowId, String operationCode,
+    private void fillAuditTrailContainer(String groupCode, String parentCode, String correlationId, String code,
                                          AuditTrail auditTrail, AuditTrailContainer auditTrailContainer) {
-        auditTrailContainer.setGroupCode(groupCode);
-        auditTrailContainer.setFlowCode(flowCode);
-        auditTrailContainer.setFlowId(flowId);
-        auditTrailContainer.setOperationCode(operationCode);
+        auditTrailContainer.setGroup(groupCode);
+        auditTrailContainer.setParentCode(parentCode);
+        auditTrailContainer.setCorrelationId(correlationId);
+        auditTrailContainer.setCode(code);
         auditTrailContainer.setAuditTrail(auditTrail);
+    }
+
+    private void sendToPublish(final BusinessLogContainer businessLogContainer) {
+        try {
+            businessLogAspectService.processBusinessLog(businessLogContainer);
+        } catch (FlowWeaverException exception) {
+            log.error("Error procesando BusinessLog: {}", exception.getMessage(), exception);
+            // Deberemos de mandar a log datos iniciales mas errores de exc...
+
+            /*
+             * Aquí se podrá aplicar alguna lógica que permita el envío de datos de entrada y la búsqueda recursiva de las
+             * excepciones anidadas. Quizás con el tiempo se puede implementar algún método que permita saber que datos se
+             * fueron tomando y que datos no, pero eso solo será informativo para mantenimiento de esta dependencia, ya que
+             * errores en lógica interna de como se maneja "x" o "y" cosa es tema propio que no debe de afectar la legibilidad
+             * de la traza que se llegue a mandar, mas bien deberá de complementarla.
+             */
+        }
     }
 
     private void sendToPublish(final AuditTrailContainer auditTrailContainer) {
         try {
             businessLogAspectService.processAuditTrail(auditTrailContainer);
         } catch (FlowWeaverException exception) {
-            log.error("Error procesando AuditTrail: {}", exception.getMessage());
+            log.error("Error procesando AuditTrail: {}", exception.getMessage(), exception);
             /*
             Aquí intentar mandar a procesar con datos primarios
              */

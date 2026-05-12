@@ -8,22 +8,25 @@ import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.util.Util;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import static java.time.Instant.now;
 
 @ToString
 public class AuditTrailContainer {
 
-    private final Instant start;
+    private final Instant instant;
 
+    @Getter
+    private final String id;
     @Setter @Getter
-    private String flowCode;
+    private String code;
     @Setter @Getter
-    private String operationCode;
+    private String group;
     @Setter @Getter
-    private String groupCode;
+    private String correlationId;
     @Setter @Getter
-    private String flowId;
+    private String parentCode;
 
     @Setter @Getter
     private String entrySignature; // firma de entrada del metodo
@@ -37,18 +40,11 @@ public class AuditTrailContainer {
     private Object response;
 
     public AuditTrailContainer() {
-        this.start = now();
-    }
-
-    public AuditTrailContainer(String groupCode, String flowCode, String flowId, String operationCode) {
-        this.groupCode = groupCode;
-        this.flowCode = flowCode;
-        this.flowId = flowId;
-        this.operationCode = operationCode;
-        this.start = now();
+        this.instant = now();
+        this.id = UUID.randomUUID().toString();
     }
 
     public String getDuration() {
-        return Util.getDuration(start, now());
+        return Util.getDuration(instant, now());
     }
 }

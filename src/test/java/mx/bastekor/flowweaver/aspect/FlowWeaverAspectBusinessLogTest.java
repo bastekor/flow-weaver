@@ -83,7 +83,7 @@ class FlowWeaverAspectBusinessLogTest {
         when(methodSignature.getMethod()).thenReturn(method);
         when(joinPoint.getArgs()).thenReturn(new Object[0]);
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
-        assertEquals(EMPTY, annotation.operationCode());
+        assertEquals(EMPTY, annotation.code());
         assertEquals(EMPTY, annotation.description());
         assertEquals(EMPTY, annotation.defaultDescription());
         assertEquals(EMPTY, annotation.value());
@@ -105,7 +105,7 @@ class FlowWeaverAspectBusinessLogTest {
     void aroundBusinessLog_doSomething002() throws Throwable {
         Method method = TestComponent.class.getMethod("doSomething002", int.class, String.class, List.class, Map.class);
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
-        assertEquals(EMPTY, annotation.operationCode());
+        assertEquals(EMPTY, annotation.code());
         assertEquals(EMPTY, annotation.description());
         assertEquals(EMPTY, annotation.defaultDescription());
         assertEquals(EMPTY, annotation.value());
@@ -127,10 +127,10 @@ class FlowWeaverAspectBusinessLogTest {
     }
 
     @Test
-    void aroundBusinessLog_withOperationCode() throws Throwable {
+    void aroundBusinessLog_withCode() throws Throwable {
         Method method = TestComponent.class.getMethod("doSomething003");
         BusinessLog annotation = this.getBusinessLogAnnotation(method);
-        assertEquals("MX-001", annotation.operationCode());
+        assertEquals("MX-001", annotation.code());
         assertEquals(EMPTY, annotation.description());
         assertEquals(EMPTY, annotation.defaultDescription());
         assertEquals(EMPTY, annotation.value());
@@ -383,12 +383,12 @@ class FlowWeaverAspectBusinessLogTest {
         public void doSomething002(int enteroInt, String cadenaString, @NonNull @Nullable List<?> listaDesconocida, @NonNull Map<String, Object> mapaDeCosas) {
         }
 
-        @BusinessLog(operationCode = "MX-001", mode = DYNAMIC)
+        @BusinessLog(code = "MX-001", mode = DYNAMIC)
         public String doSomething003() {
             return "OK";
         }
 
-        @BusinessLog(operationCode = "ES-002", defaultDescription = "Español 2, latino")
+        @BusinessLog(code = "ES-002", defaultDescription = "Español 2, latino")
         public void doSomething004(int i, String str, List<?> list) {
         }
 
@@ -424,7 +424,7 @@ class FlowWeaverAspectBusinessLogTest {
     static class PaymentComponent {
 
         @BusinessLog(
-                operationCode = "MX-002",
+                code = "MX-002",
                 description = "description",
                 defaultDescription = "Pago con tarjeta de debito",
                 value = "amount",

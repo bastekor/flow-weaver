@@ -15,34 +15,38 @@ import mx.bastekor.flowweaver.util.Util;
 
 public class BusinessLogContainer {
 
+    private final Instant instant;
+
     @Getter
-    private final String operationId;
+    private final String id;
     @Getter
-    private final String operationCode;
+    private final String code;
     @Getter
-    private final String groupCode;
-    private final Instant start;
+    private final String group;
+    @Getter
+    private final String correlationId;
 
     @Setter @Getter
-    private String exitSignature;
-    @Setter @Getter
     private BusinessLog businessLog;
+    @Setter @Getter
+    private String exitSignature;
     @Setter @Getter
     private StatusEnum status;
     @Setter @Getter
     private Object response;
     private final List<AuditTrailContainer> auditTrails;
 
-    public BusinessLogContainer(String groupCode, String operationCode) {
-        this.groupCode = groupCode;
-        this.operationCode = operationCode;
-        this.operationId = randomUUID().toString();
-        this.start = now();
+    public BusinessLogContainer(String group, String code) {
+        this.instant = now();
+        this.id = randomUUID().toString();
+        this.code = code;
+        this.group = group;
+        this.correlationId = randomUUID().toString();
         this.auditTrails = new ArrayList<>();
     }
 
     public String getDuration() {
-        return Util.getDuration(start, now());
+        return Util.getDuration(instant, now());
     }
 
     public void addAuditTrail(AuditTrailContainer auditTrail) {
