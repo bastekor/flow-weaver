@@ -32,6 +32,7 @@ import static mx.bastekor.flowweaver.enums.StatusEnum.SOURCE_SUCCESS;
 import static mx.bastekor.flowweaver.mapper.SafeSnapshotMapper.mapArgs;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
 import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 @Slf4j
 @Aspect
@@ -123,12 +124,11 @@ public class FlowWeaverAspect {
             addAuditTrailContainer(false, outAuditTrailContainer, blc);
             this.sendToPublish(outAuditTrailContainer);
 
-            clearBusinessLogContainer(blcCode);
 //            // Único para "BusinessLogContainer" por default, ya que elimina al BusinessLogContainer creado
 //            // temporalmente para este "huerfano".
-//            if (isBlank(auditTrail.parentCode())) {
-//                clearBusinessLogContainer(blc.getCode());
-//            }
+            if (isBlank(auditTrail.parentCode())) {
+                clearBusinessLogContainer(blc.getCode());
+            }
             log.info(AUDIT_TRAIL_END, status);
         }
     }

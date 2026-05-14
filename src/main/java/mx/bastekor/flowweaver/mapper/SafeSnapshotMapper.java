@@ -8,53 +8,69 @@ import org.aspectj.lang.reflect.MethodSignature;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static mx.bastekor.flowweaver.model.SafeSerializer.safeValue;
-import static mx.bastekor.flowweaver.util.BusinessLogUtils.getArgumentAnnotations;
-import static mx.bastekor.flowweaver.util.BusinessLogUtils.getMethodAnnotations;
 
 @NoArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 public final class SafeSnapshotMapper {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+
     /**
      * Método encargado de generar en formato JSON la firma completa del método anotado.
+     *
      * @param joinPoint Objeto interceptor
-     * @param maxDepth máximo nivel de anidamiento
+     * @param maxDepth  máximo nivel de anidamiento
      * @return Cadena en formato JSON
      */
     public static String mapArgs(ProceedingJoinPoint joinPoint, int maxDepth) {
         try {
             MethodSignature signature = (MethodSignature) joinPoint.getSignature();
             Method method = signature.getMethod();
-            Parameter[] parameters = method.getParameters();
-            Object[] args = joinPoint.getArgs();
-
-            Map<String, Object> root = new LinkedHashMap<>();
-            root.put("_class", signature.getDeclaringTypeName());
-            root.put("_method", method.getName());
-            root.put("_returnType", method.getReturnType().getSimpleName());
-            root.put("_annotations", getMethodAnnotations(method));
-
-            Map<String, Object> argsMap = new LinkedHashMap<>();
-            for (int i = 0; i < parameters.length; i++) {
-                Parameter parameter = parameters[i];
-                Map<String, Object> object = new LinkedHashMap<>();
-                object.put("index", i);
-                object.put("name", parameter.getName());
-                object.putAll(safeValue(args[i], 0, maxDepth));
-                object.put("_annotations", getArgumentAnnotations(method.getParameterAnnotations(), i));
-                argsMap.put("arg[" + i + "]", object);
-            }
-            root.put("args", argsMap);
-            return MAPPER.writeValueAsString(root);
+            return mapArgs(method, joinPoint.getArgs(), maxDepth);
         } catch (JsonProcessingException e) {
             return "{\"error\":\"Failed to serialize snapshot: " + e.getMessage() + "\"}";
         } catch (Exception e) {
             return "{\"error\":\"Unexpected error: " + e.getMessage() + "\"}";
         }
+    }
+
+    public static String mapArgs(Method method, Object[] args, int maxDepth) throws Exception {
+        Parameter[] parameters = method.getParameters();
+
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("_type", method.getDeclaringClass().getName());
+        root.put("_method", method.getName());
+        root.put("_returnType", method.getReturnType().getName());
+
+        List<Object> argsList = new ArrayList<>();
+        for (int i = 0; i < parameters.length; i++) {
+            Parameter parameter = parameters[i];
+            Object safeResult = safeValue(args[i], 0, maxDepth);
+
+            Map<String, Object> argMap = new LinkedHashMap<>();
+            argMap.put("index", i);
+            argMap.put("name", parameter.getName());
+
+            if (safeResult instanceof Map) {
+                Map<String, Object> safeMap = (Map<String, Object>) safeResult;
+                argMap.put("_type", safeMap.get("_type"));
+                argMap.put("_string", safeMap.get("_string"));
+                argMap.put("value", safeMap.get("value"));
+            } else {
+                argMap.put("_type", parameter.getType().getName());
+                argMap.put("_string", safeResult);
+                argMap.put("value", safeResult);
+            }
+
+            argsList.add(argMap);
+        }
+        root.put("args", argsList);
+        return MAPPER.writeValueAsString(root);
     }
 }

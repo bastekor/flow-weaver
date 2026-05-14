@@ -11,21 +11,19 @@ import java.util.*;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SafeSerializer {
 
-    public static Map<String, Object> safeValue(Object value, int depth, int maxDepth) {
+    public static Object safeValue(Object value, int depth, int maxDepth) {
         if (value == null) {
-            Map<String, Object> nullMap = new LinkedHashMap<>();
-            nullMap.put("_type", "null");
-            nullMap.put("_class", "null");
-            nullMap.put("_string", "null");
-            return nullMap;
+            return null;
         }
 
         if (depth >= maxDepth) {
-            return buildMeta(value, "[depth_limit_reached]", true);
+            Map<String, Object> meta = baseMeta(value);
+            meta.put("value", Map.of("_depth", "limit_reached"));
+            return meta;
         }
 
         if (isSimple(value)) {
-            return buildMeta(value, value.toString(), false);
+            return value.toString();
         }
 
         try {
@@ -62,7 +60,7 @@ public final class SafeSerializer {
             }
 
             if (isNotSerializable(value)) {
-                return buildMeta(value, "NOT_SERIALIZABLE", true);
+                return buildErrorMeta(value, "NOT_SERIALIZABLE");
             }
 
             Map<String, Object> map = baseMeta(value);
@@ -81,25 +79,20 @@ public final class SafeSerializer {
             return map;
 
         } catch (Throwable t) {
-            return buildMeta(value, "NOT_SERIALIZABLE (" + t.getClass().getSimpleName() + ")", true);
+            return buildErrorMeta(value, "NOT_SERIALIZABLE (" + t.getClass().getSimpleName() + ")");
         }
     }
 
     private static Map<String, Object> baseMeta(Object value) {
         Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put("_type", value.getClass().getSimpleName());
-        meta.put("_class", value.getClass().getName());
+        meta.put("_type", value.getClass().getName());
         meta.put("_string", value.toString());
         return meta;
     }
 
-    private static Map<String, Object> buildMeta(Object value, String snapshotVal, boolean markError) {
+    private static Map<String, Object> buildErrorMeta(Object value, String errorMsg) {
         Map<String, Object> meta = baseMeta(value);
-        if (markError) {
-            meta.put("_snapshot", snapshotVal);
-        } else {
-            meta.put("value", snapshotVal);
-        }
+        meta.put("value", Map.of("_depth", "error", "_string", errorMsg));
         return meta;
     }
 

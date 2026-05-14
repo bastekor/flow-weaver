@@ -72,7 +72,6 @@ class FlowWeaverAspectBusinessLogTest {
         // Limpiar el contexto antes de cada prueba para evitar interferencias
         FlowWeaverContext.clearCurrentThreadContainer();
         when(joinPoint.getSignature()).thenReturn(methodSignature);
-        when(methodSignature.getDeclaringTypeName()).thenReturn(TestComponent.class.getName());
     }
 
     @Test
@@ -308,7 +307,6 @@ class FlowWeaverAspectBusinessLogTest {
         assertEquals("0", annotation.dataOut()[1].defaultValue());
 
         when(joinPoint.proceed()).thenReturn(true);
-        when(methodSignature.getDeclaringTypeName()).thenReturn(PaymentComponent.class.getName());
         when(methodSignature.getMethod()).thenReturn(method);
         when(joinPoint.getArgs()).thenReturn(new Object[]{"1234567890", 100.0, "MXN", "MX"});
         Object result = aspect.aroundBusinessLog(joinPoint, annotation);
