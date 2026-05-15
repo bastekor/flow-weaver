@@ -3,16 +3,12 @@ package mx.bastekor.flowweaver.mapper;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
-import mx.bastekor.flowweaver.annotation.DataParam;
-import mx.bastekor.flowweaver.enums.Mode;
-import mx.bastekor.flowweaver.model.SafeSerializer;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SafeSnapshotMapperTest {
 

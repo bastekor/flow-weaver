@@ -62,11 +62,6 @@ public class ThreadContainer {
      * Si hay varios con el mismo code elimina el último (el más "reciente").
      */
     public void clearBusinessLogContainer(final String code) {
-        Optional<String> keyToRemove = businessLogs.entrySet()
-                .stream()
-                .filter(e -> code.equals(e.getValue().getCode()))
-                .map(Map.Entry::getKey)
-                .reduce((first, second) -> second); // el último
-        keyToRemove.ifPresent(businessLogs::remove);
+        businessLogs.remove(code);
     }
 }

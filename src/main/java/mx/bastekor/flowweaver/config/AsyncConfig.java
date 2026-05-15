@@ -23,11 +23,8 @@ public class AsyncConfig {
         executor.setMaxPoolSize(4);
         executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("flow-weaver-");
-
         executor.setTaskDecorator(new FlowWeaverTaskDecorator());
-
         executor.initialize();
-
         log.info("✅ FlowWeaver Executor inicializado con TaskDecorator");
 
         return executor;
@@ -45,8 +42,7 @@ public class AsyncConfig {
 
             return () -> {
                 String asyncThreadName = Thread.currentThread().getName();
-
-                // 🔹 Detectar si ya existe uno en el hijo
+                // Detectar si ya existe uno en el hijo
                 boolean contextoPrevio = FlowWeaverContext.peekThreadContainerExists();
 
                 try {
@@ -55,11 +51,10 @@ public class AsyncConfig {
                         FlowWeaverContext.setCurrentThreadContainer(parentThreadContainer);
                         log.debug("🔄 Contexto propagado de [{}] a [{}]", parentThreadName, asyncThreadName);
                     }
-
                     runnable.run();
 
                 } finally {
-                    // 🔸 Solo limpiar si el hilo async NO heredó el contexto del padre
+                    // Solo limpiar si el hilo async NO heredó el contexto del padre
                     if (!contextoPrevio) {
                         FlowWeaverContext.clearCurrentThreadContainer();
                     }

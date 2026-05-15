@@ -1,11 +1,15 @@
 package mx.bastekor.flowweaver.mapper;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NoArgsConstructor;
+import mx.bastekor.flowweaver.annotation.AuditTrail;
+import mx.bastekor.flowweaver.annotation.BusinessLog;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
@@ -20,6 +24,9 @@ public final class SafeSnapshotMapper {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    static {
+        MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    }
 
     /**
      * Método encargado de generar en formato JSON la firma completa del método anotado.
@@ -47,6 +54,16 @@ public final class SafeSnapshotMapper {
         root.put("_type", method.getDeclaringClass().getName());
         root.put("_method", method.getName());
         root.put("_returnType", method.getReturnType().getName());
+
+        List<String> annotationsList = new ArrayList<>();
+        for (Annotation annotation : method.getAnnotations()) {
+            if (annotation instanceof BusinessLog || annotation instanceof AuditTrail) {
+                annotationsList.add(annotation.toString());
+            } else {
+                annotationsList.add("@" + annotation.annotationType().getSimpleName());
+            }
+        }
+        root.put("_annotations", annotationsList);
 
         List<Object> argsList = new ArrayList<>();
         for (int i = 0; i < parameters.length; i++) {
