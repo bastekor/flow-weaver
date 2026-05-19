@@ -1,0 +1,33 @@
+{
+    "users": [
+        {
+            "id": "u001",
+            "name": "Alice",
+            "emails": ["alice@work.com", "alice@home.com"],
+            "addresses": [
+                { "city": "New York", "zip": "10001" },
+                { "city": "Boston", "zip": "02101" }
+            ],
+            "roles": {
+                "admin": { "level": 3, "since": "2023" },
+                "editor": { "level": 5, "since": "2024" }
+            }
+        },
+        {
+            "id": "u002",
+            "name": "Bob",
+            "emails": ["bob@work.com"],
+            "addresses": [
+                { "city": "Chicago", "zip": "60601" }
+            ],
+            "roles": {
+                "viewer": { "level": 1, "since": "2025" }
+            }
+        }
+    ],
+    "summary": {
+        "total": 2,
+        "active": 1,
+        "cities": ["New York", "Boston", "Chicago"]
+    }
+}

@@ -1,0 +1,50 @@
+{
+    "root": {
+        "left": {
+            "left": {
+                "left": {
+                    "left": {
+                        "left": {
+                            "left": {
+                                "data": "deep-left"
+                            },
+                            "right": {
+                                "data": "deep-right"
+                            }
+                        },
+                        "right": {
+                            "data": "lr-data"
+                        }
+                    },
+                    "right": {
+                        "data": "llr-data"
+                    }
+                },
+                "right": {
+                    "left": {
+                        "data": "lrl-data"
+                    },
+                    "right": {
+                        "data": "lrr-data"
+                    }
+                }
+            },
+            "right": {
+                "left": {
+                    "data": "rl-data"
+                },
+                "right": {
+                    "data": "rr-data"
+                }
+            }
+        },
+        "right": {
+            "left": {
+                "data": "r-root"
+            },
+            "right": {
+                "data": "r-root2"
+            }
+        }
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "config": {
+        "simple": "value",
+        "with.dot": "dot-value",
+        "with space": "space-value",
+        "with.special.chars!": "special-value",
+        "nested.map": {
+            "inner.key": "inner-value",
+            "plain": "plain-value"
+        }
+    },
+    "lookup": {
+        "my.key.with.dots": {
+            "role": "admin",
+            "level": 5
+        }
+    },
+    "mixed": {
+        "plain": "plain-field",
+        "data[0]": "bracket-field",
+        "args": "args-field"
+    },
+    "deep.map": {
+        "also.nested": {
+            "finally": {
+                "value": "reached"
+            }
+        }
+    }
+}

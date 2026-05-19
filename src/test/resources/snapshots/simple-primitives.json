@@ -1,0 +1,47 @@
+{
+    "_type": "com.example.PrimitiveService",
+    "_method": "processPrimitives",
+    "_returnType": "void",
+    "_annotations": [
+        "@BusinessLog"
+    ],
+    "_args": [
+        {
+            "_index": 0,
+            "_name": "username",
+            "_type": "java.lang.String",
+            "_toString": "john_doe",
+            "_value": "john_doe"
+        },
+        {
+            "_index": 1,
+            "_name": "age",
+            "_type": "int",
+            "_toString": "25",
+            "_value": "25"
+        },
+        {
+            "_index": 2,
+            "_name": "active",
+            "_type": "boolean",
+            "_toString": "true",
+            "_value": "true"
+        },
+        {
+            "_index": 3,
+            "_name": "salary",
+            "_type": "java.math.BigDecimal",
+            "_toString": "75000.50",
+            "_value": {
+                "_depth": "limit_reached"
+            }
+        },
+        {
+            "_index": 4,
+            "_name": "metadata",
+            "_type": "java.lang.String",
+            "_toString": "null",
+            "_value": ""
+        }
+    ]
+}

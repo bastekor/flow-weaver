@@ -1,0 +1,93 @@
+{
+    "_type": "com.example.MixedService",
+    "_method": "handleMixed",
+    "_returnType": "boolean",
+    "_annotations": [],
+    "_args": [
+        {
+            "_index": 0,
+            "_name": "id",
+            "_type": "long",
+            "_toString": "42",
+            "_value": "42"
+        },
+        {
+            "_index": 1,
+            "_name": "label",
+            "_type": "java.lang.String",
+            "_toString": "",
+            "_value": ""
+        },
+        {
+            "_index": 2,
+            "_name": "tags",
+            "_type": "java.util.List",
+            "_toString": "[urgent, backend, java]",
+            "_value": [
+                {
+                    "_type": "java.lang.String",
+                    "_toString": "urgent",
+                    "_value": {
+                        "_depth": "limit_reached"
+                    }
+                },
+                {
+                    "_type": "java.lang.String",
+                    "_toString": "backend",
+                    "_value": {
+                        "_depth": "limit_reached"
+                    }
+                },
+                {
+                    "_type": "java.lang.String",
+                    "_toString": "java",
+                    "_value": {
+                        "_depth": "limit_reached"
+                    }
+                }
+            ]
+        },
+        {
+            "_index": 3,
+            "_name": "config",
+            "_type": "com.example.Config",
+            "_toString": "Config(timeout=5000, retries=3, flags={debug:true, cache:false})",
+            "_value": {
+                "timeout": {
+                    "_type": "int",
+                    "_toString": "5000",
+                    "_value": {
+                        "_depth": "limit_reached"
+                    }
+                },
+                "retries": {
+                    "_type": "int",
+                    "_toString": "3",
+                    "_value": {
+                        "_depth": "limit_reached"
+                    }
+                },
+                "flags": {
+                    "_type": "com.example.Flags",
+                    "_toString": "Flags(debug=true, cache=false)",
+                    "_value": {
+                        "debug": {
+                            "_type": "boolean",
+                            "_toString": "true",
+                            "_value": {
+                                "_depth": "limit_reached"
+                            }
+                        },
+                        "cache": {
+                            "_type": "boolean",
+                            "_toString": "false",
+                            "_value": {
+                                "_depth": "limit_reached"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

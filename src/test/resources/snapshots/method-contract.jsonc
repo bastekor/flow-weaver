@@ -1,0 +1,81 @@
+{
+    "_type": "mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$TestService",
+    "_method": "process2",
+    "_returnType": "java.lang.String",
+    "_annotations": [
+        "@mx.bastekor.flowweaver.annotation.BusinessLog(exception=\"\", mode=Mode.STATIC, dataOut={}, code=\"\", defaultValue=\"\", description=\"\", defaultException=\"\", value=\"\", group=\"\", defaultDescription=\"\")"
+    ],
+    "_args": [
+        {
+            "_index": 0,
+            "_name": "code",
+            "_type": "java.lang.String",
+            "_toString": "test",
+            "_value": "test"
+        },
+        {
+            "_index": 1,
+            "_name": "persons",
+            "_type": "java.util.ImmutableCollections$List12",
+            "_toString": "[SafeSnapshotMapperTest.Person(name=Juan, email=juan@email.com, amount=SafeSnapshotMapperTest.Money(currency=USD, amount=100)), SafeSnapshotMapperTest.Person(name=Juan, email=juan@email.com, amount=SafeSnapshotMapperTest.Money(currency=USD, amount=100))]",
+            "_value": [
+                {
+                    "_type": "mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$Person",
+                    "_toString": "SafeSnapshotMapperTest.Person(name=Juan, email=juan@email.com, amount=SafeSnapshotMapperTest.Money(currency=USD, amount=100))",
+                    "_value": {
+                        "name": "Juan",
+                        "email": "juan@email.com",
+                        "amount": {
+                            "_type": "mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$Money",
+                            "_toString": "SafeSnapshotMapperTest.Money(currency=USD, amount=100)",
+                            "_value": {
+                                "currency": {
+                                    "_type": "java.lang.String",
+                                    "_toString": "USD",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                },
+                                "amount": {
+                                    "_type": "java.math.BigDecimal",
+                                    "_toString": "100",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "_type": "mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$Person",
+                    "_toString": "SafeSnapshotMapperTest.Person(name=Juan, email=juan@email.com, amount=SafeSnapshotMapperTest.Money(currency=USD, amount=100))",
+                    "_value": {
+                        "name": "Juan",
+                        "email": "juan@email.com",
+                        "amount": {
+                            "_type": "mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$Money",
+                            "_toString": "SafeSnapshotMapperTest.Money(currency=USD, amount=100)",
+                            "_value": {
+                                "currency": {
+                                    "_type": "java.lang.String",
+                                    "_toString": "USD",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                },
+                                "amount": {
+                                    "_type": "java.math.BigDecimal",
+                                    "_toString": "100",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,12 @@
+{
+    "app": "FlowWeaver",
+    "version": "0.1.1",
+    "environment": "development",
+    "features": {
+        "logging": true,
+        "audit": false,
+        "maxDepth": 3
+    },
+    "tags": ["beta", "experimental"],
+    "owner": null
+}

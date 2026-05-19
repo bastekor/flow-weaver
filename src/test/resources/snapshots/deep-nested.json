@@ -1,0 +1,85 @@
+{
+    "_type": "com.example.NestedService",
+    "_method": "processOrder",
+    "_returnType": "java.lang.String",
+    "_annotations": [
+        "@BusinessLog"
+    ],
+    "_args": [
+        {
+            "_index": 0,
+            "_name": "orderId",
+            "_type": "java.lang.String",
+            "_toString": "ORD-001",
+            "_value": "ORD-001"
+        },
+        {
+            "_index": 1,
+            "_name": "customer",
+            "_type": "com.example.Customer",
+            "_toString": "Customer(name=Alice, tier=gold)",
+            "_value": {
+                "name": {
+                    "_type": "java.lang.String",
+                    "_toString": "Alice",
+                    "_value": {
+                        "_depth": "limit_reached"
+                    }
+                },
+                "tier": {
+                    "_type": "java.lang.String",
+                    "_toString": "gold",
+                    "_value": {
+                        "_depth": "limit_reached"
+                    }
+                },
+                "addresses": {
+                    "_type": "java.util.List",
+                    "_toString": "[Address(street=123 Main St, city=Springfield), Address(street=456 Oak Ave, city=Metropolis)]",
+                    "_value": [
+                        {
+                            "_type": "com.example.Address",
+                            "_toString": "Address(street=123 Main St, city=Springfield)",
+                            "_value": {
+                                "street": {
+                                    "_type": "java.lang.String",
+                                    "_toString": "123 Main St",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                },
+                                "city": {
+                                    "_type": "java.lang.String",
+                                    "_toString": "Springfield",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "_type": "com.example.Address",
+                            "_toString": "Address(street=456 Oak Ave, city=Metropolis)",
+                            "_value": {
+                                "street": {
+                                    "_type": "java.lang.String",
+                                    "_toString": "456 Oak Ave",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                },
+                                "city": {
+                                    "_type": "java.lang.String",
+                                    "_toString": "Metropolis",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

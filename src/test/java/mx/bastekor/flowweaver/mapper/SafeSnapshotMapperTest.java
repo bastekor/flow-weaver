@@ -23,7 +23,7 @@ class SafeSnapshotMapperTest {
         System.out.println("=== END ===");
         assertNotNull(json);
         assertTrue(json.contains("Hello World"), "JSON should contain the string value");
-        assertTrue(json.contains("_string"), "JSON should contain _string field");
+        assertTrue(json.contains("_toString"), "JSON should contain _toString field");
         assertTrue(json.contains("value"), "JSON should contain value field");
     }
 
