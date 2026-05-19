@@ -1,46 +1,81 @@
 {
-  "_type":       "string  // FQN de la clase declarante. Ej: com.example.customer.service.TestService",
-  "_method":     "string  // Nombre del método. Ej: tareaAsincronaTest2",
-  "_returnType": "string  // FQN del tipo retorno. Ej: void, java.lang.String, com.example.CustomerDTO",
-
-  "args": [
-    {
-      "index":   "number // Posición del parámetro. 0-based",
-      "name":    "string // Nombre del parámetro",
-      "_type":   "string // FQN del tipo. Ej: java.lang.String, java.util.ArrayList",
-      "_string": "string | null // toString() del valor. Omitido si null",
-      "value": "" // Ver 👇 según el tipo
-
-      // value puede ser:
-      //
-      // a) String directo (tipos simples):
-      //    value: "Hola perra"
-      //    (String, Number, Boolean, Enum, Date, Character, primitivos)
-      //
-      // b) Objeto recursivo (POJO):
-      //    value: {
-      //        "_type":   "com.example.CustomerDTO",
-      //        "_string": "CustomerDTO(id=1, name=LUIS)",
-      //        "value": {
-      //            "id":    "1",
-      //            "name":  "LUIS",
-      //            "email": "luis@email.com"
-      //        }
-      //    }
-      //
-      // c) Array (Collection, array nativo):
-      //    value: [ {_type, _string, value}, {_type, _string, value}, ... ]
-      //
-      // d) Map:
-      //    value: { "<key1>": {_type, _string, value}, "<key2>": ... }
-      //
-      // e) Límite de profundidad alcanzado:
-      //    value: { "_depth": "limit_reached" }
-      //
-      // f) Error (no serializable / excepción):
-      //    value: { "_depth": "error", "_string": "NOT_SERIALIZABLE" }
-      //
-      // Campos nulos: omitidos del JSON (config NON_NULL)
-    }
-  ]
+    "_type": "mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$TestService",
+    "_method": "process2",
+    "_returnType": "java.lang.String",
+    "_annotations": [
+        "@mx.bastekor.flowweaver.annotation.BusinessLog(exception=\"\", mode=Mode.STATIC, dataOut={}, code=\"\", defaultValue=\"\", description=\"\", defaultException=\"\", value=\"\", group=\"\", defaultDescription=\"\")"
+    ],
+    "_args": [
+        {
+            "_index": 0,
+            "_name": "code",
+            "_type": "java.lang.String",
+            "_toString": "test",
+            "_value": "test"
+        },
+        {
+            "_index": 1,
+            "_name": "persons",
+            "_type": "java.util.ImmutableCollections$List12",
+            "_toString": "[SafeSnapshotMapperTest.Person(name=Juan, email=juan@email.com, amount=SafeSnapshotMapperTest.Money(currency=USD, amount=100)), SafeSnapshotMapperTest.Person(name=Juan, email=juan@email.com, amount=SafeSnapshotMapperTest.Money(currency=USD, amount=100))]",
+            "_value": [
+                {
+                    "_type": "mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$Person",
+                    "_toString": "SafeSnapshotMapperTest.Person(name=Juan, email=juan@email.com, amount=SafeSnapshotMapperTest.Money(currency=USD, amount=100))",
+                    "_value": {
+                        "name": "Juan",
+                        "email": "juan@email.com",
+                        "amount": {
+                            "_type": "mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$Money",
+                            "_toString": "SafeSnapshotMapperTest.Money(currency=USD, amount=100)",
+                            "_value": {
+                                "currency": {
+                                    "_type": "java.lang.String",
+                                    "_toString": "USD",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                },
+                                "amount": {
+                                    "_type": "java.math.BigDecimal",
+                                    "_toString": "100",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "_type": "mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$Person",
+                    "_toString": "SafeSnapshotMapperTest.Person(name=Juan, email=juan@email.com, amount=SafeSnapshotMapperTest.Money(currency=USD, amount=100))",
+                    "_value": {
+                        "name": "Juan",
+                        "email": "juan@email.com",
+                        "amount": {
+                            "_type": "mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$Money",
+                            "_toString": "SafeSnapshotMapperTest.Money(currency=USD, amount=100)",
+                            "_value": {
+                                "currency": {
+                                    "_type": "java.lang.String",
+                                    "_toString": "USD",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                },
+                                "amount": {
+                                    "_type": "java.math.BigDecimal",
+                                    "_toString": "100",
+                                    "_value": {
+                                        "_depth": "limit_reached"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ]
 }

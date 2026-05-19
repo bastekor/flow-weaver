@@ -67,7 +67,7 @@ public class FlowWeaverAspect {
         } catch (Throwable throwable) {
             status = SOURCE_FAILURE;
             response = throwable;
-            log.error(BUSINESS_LOG_ERROR, blc.getId(), blc.getCode(), throwable.getMessage(), throwable);
+            log.error(BUSINESS_LOG_ERROR, blc.getCorrelationId(), blc.getId(), blc.getCode(), throwable.getMessage(), throwable);
             throw throwable;
         } finally {
             blc.setStatus(status);
@@ -99,6 +99,7 @@ public class FlowWeaverAspect {
 
         this.fillAuditTrailContainer(blcGroup, blcCode, blcCorrelationId, code, auditTrail, inAuditTrailContainer);
         inAuditTrailContainer.setEntrySignature(mapArgs(joinPoint, maxDepth));
+        inAuditTrailContainer.setStatus(SOURCE_SUCCESS);
         addAuditTrailContainer(true, inAuditTrailContainer, blc);
         this.sendToPublish(inAuditTrailContainer);
 
@@ -156,6 +157,8 @@ public class FlowWeaverAspect {
              * errores en lógica interna de como se maneja "x" o "y" cosa es tema propio que no debe de afectar la legibilidad
              * de la traza que se llegue a mandar, mas bien deberá de complementarla.
              */
+        } finally {
+            // Termino...
         }
     }
 

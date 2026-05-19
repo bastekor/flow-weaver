@@ -11,8 +11,9 @@ import mx.bastekor.flowweaver.enums.Mode;
 @NoArgsConstructor
 @ToString(callSuper = true)
 public class BusinessLogDTO extends DataParamsDTO {
-    private String groupCode;
-    private String operationCode;
+    private String correlationId;
+    private String group;
+    private String code;
     private String description;
     private String defaultDescription;
     private String value;

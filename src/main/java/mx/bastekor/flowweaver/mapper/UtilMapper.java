@@ -22,8 +22,9 @@ public interface UtilMapper {
     DataParamsDTO mergeDataParamsDTO(DataParamsDTO priority, DataParamsDTO fallback);
 
     @InheritConfiguration(name = "mergeDataParamsDTO")
-    @Mapping(target = "groupCode", expression = "java(MergeHelper.resolve(priority.getGroupCode(), fallback.getGroupCode()))")
-    @Mapping(target = "operationCode", expression = "java(MergeHelper.resolve(priority.getOperationCode(), fallback.getOperationCode()))")
+    @Mapping(target = "correlationId", ignore = true)
+    @Mapping(target = "group", expression = "java(MergeHelper.resolve(priority.getGroup(), fallback.getGroup()))")
+    @Mapping(target = "code", expression = "java(MergeHelper.resolve(priority.getCode(), fallback.getCode()))")
     @Mapping(target = "description", expression = "java(MergeHelper.resolve(priority.getDescription(), fallback.getDescription()))")
     @Mapping(target = "defaultDescription", expression = "java(MergeHelper.resolve(priority.getDefaultDescription(), fallback.getDefaultDescription()))")
     @Mapping(target = "value", expression = "java(MergeHelper.resolve(priority.getValue(), fallback.getValue()))")

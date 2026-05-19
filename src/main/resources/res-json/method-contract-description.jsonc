@@ -1,0 +1,46 @@
+{
+  "_type":       "string  // FQN de la clase declarante. Ej: com.example.customer.service.TestService",
+  "_method":     "string  // Nombre del método. Ej: tareaAsincronaTest2",
+  "_returnType": "string  // FQN del tipo retorno. Ej: void, java.lang.String, com.example.CustomerDTO",
+
+  "args": [
+    {
+      "index":   "number // Posición del parámetro. 0-based",
+      "name":    "string // Nombre del parámetro",
+      "_type":   "string // FQN del tipo. Ej: java.lang.String, java.util.ArrayList",
+      "_string": "string | null // toString() del valor. Omitido si null",
+      "value": "" // Ver 👇 según el tipo
+
+      // value puede ser:
+      //
+      // a) String directo (tipos simples):
+      //    value: "Hola perra"
+      //    (String, Number, Boolean, Enum, Date, Character, primitivos)
+      //
+      // b) Objeto recursivo (POJO):
+      //    value: {
+      //        "_type":   "com.example.CustomerDTO",
+      //        "_string": "CustomerDTO(id=1, name=LUIS)",
+      //        "value": {
+      //            "id":    "1",
+      //            "name":  "LUIS",
+      //            "email": "luis@email.com"
+      //        }
+      //    }
+      //
+      // c) Array (Collection, array nativo):
+      //    value: [ {_type, _string, value}, {_type, _string, value}, ... ]
+      //
+      // d) Map:
+      //    value: { "<key1>": {_type, _string, value}, "<key2>": ... }
+      //
+      // e) Límite de profundidad alcanzado:
+      //    value: { "_depth": "limit_reached" }
+      //
+      // f) Error (no serializable / excepción):
+      //    value: { "_depth": "error", "_string": "NOT_SERIALIZABLE" }
+      //
+      // Campos nulos: omitidos del JSON (config NON_NULL)
+    }
+  ]
+}

@@ -36,12 +36,12 @@ public class BusinessLogContainer {
     private Object response;
     private final List<AuditTrailContainer> auditTrails;
 
-    public BusinessLogContainer(String group, String code) {
+    public BusinessLogContainer(String correlationId, String group, String code) {
         this.instant = now();
         this.id = randomUUID().toString();
-        this.code = code;
         this.group = group;
-        this.correlationId = randomUUID().toString();
+        this.code = code;
+        this.correlationId = correlationId;
         this.auditTrails = new ArrayList<>();
     }
 

@@ -82,7 +82,8 @@ public final class FlowWeaverContext {
     }
 
     private static BusinessLogContainer createBusinessLogContainer(final String group, final String code) {
-        final BusinessLogContainer businessLogContainer = new BusinessLogContainer(group, code);
+        final String correlationId = getCurrentThreadContainer().getCorrelationId();
+        final BusinessLogContainer businessLogContainer = new BusinessLogContainer(correlationId, group, code);
         getCurrentThreadContainer().addBusinessLogContainer(businessLogContainer);
         logBusinessLogContainer(businessLogContainer, true);
         return businessLogContainer;

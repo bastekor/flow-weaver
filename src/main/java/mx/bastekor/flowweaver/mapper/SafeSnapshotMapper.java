@@ -71,23 +71,23 @@ public final class SafeSnapshotMapper {
             Object safeResult = safeValue(args[i], 0, maxDepth);
 
             Map<String, Object> argMap = new LinkedHashMap<>();
-            argMap.put("index", i);
-            argMap.put("name", parameter.getName());
+            argMap.put("_index", i);
+            argMap.put("_name", parameter.getName());
 
             if (safeResult instanceof Map) {
                 Map<String, Object> safeMap = (Map<String, Object>) safeResult;
                 argMap.put("_type", safeMap.get("_type"));
-                argMap.put("_string", safeMap.get("_string"));
-                argMap.put("value", safeMap.get("value"));
+                argMap.put("_toString", safeMap.get("_toString"));
+                argMap.put("_value", safeMap.get("_value"));
             } else {
                 argMap.put("_type", parameter.getType().getName());
-                argMap.put("_string", safeResult);
-                argMap.put("value", safeResult);
+                argMap.put("_toString", safeResult);
+                argMap.put("_value", safeResult);
             }
 
             argsList.add(argMap);
         }
-        root.put("args", argsList);
+        root.put("_args", argsList);
         return MAPPER.writeValueAsString(root);
     }
 }

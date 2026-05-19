@@ -17,14 +17,14 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"request_id", "group_code", "flow_code", "description", "status", "result", "mode", "data"})
+@JsonPropertyOrder({"request_id", "group", "code", "description", "status", "result", "mode", "data"})
 public class RequestDTO extends AppInfoDTO {
     @JsonProperty("request_id")
     private String id;
-    @JsonProperty("group_code")
-    private String groupCode;
-    @JsonProperty("flow_code")
-    private String flowCode;
+    @JsonProperty("group")
+    private String group;
+    @JsonProperty("code")
+    private String code;
     @JsonProperty("description")
     private String description;
     @JsonProperty("status")

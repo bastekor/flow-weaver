@@ -24,9 +24,9 @@ public final class AuditTrailMapper {
         }
 
         final AuditTrailDTO auditTrailDTO = new AuditTrailDTO();
-        auditTrailDTO.setGroupCode(auditTrailContainer.getGroup());
+        auditTrailDTO.setGroup(auditTrailContainer.getGroup());
         auditTrailDTO.setFlowCode(auditTrailContainer.getParentCode());
-        auditTrailDTO.setOperationCode(auditTrailContainer.getCode());
+        auditTrailDTO.setCode(auditTrailContainer.getCode());
         auditTrailDTO.setDescription(trim(auditTrailContainer.getAuditTrail().description()));
         auditTrailDTO.setDefaultDescription(trim(auditTrailContainer.getAuditTrail().defaultDescription()));
         auditTrailDTO.setValue(trim(auditTrailContainer.getAuditTrail().value()));

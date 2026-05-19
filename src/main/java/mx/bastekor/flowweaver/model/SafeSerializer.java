@@ -18,7 +18,7 @@ public final class SafeSerializer {
 
         if (depth >= maxDepth) {
             Map<String, Object> meta = baseMeta(value);
-            meta.put("value", Map.of("_depth", "limit_reached"));
+            meta.put("_value", Map.of("_depth", "limit_reached"));
             return meta;
         }
 
@@ -34,7 +34,7 @@ public final class SafeSerializer {
                 for (Map.Entry<Object, Object> e : in.entrySet()) {
                     inner.put(String.valueOf(e.getKey()), safeValue(e.getValue(), depth + 1, maxDepth));
                 }
-                out.put("value", inner);
+                out.put("_value", inner);
                 return out;
             }
 
@@ -44,7 +44,7 @@ public final class SafeSerializer {
                 for (Object o : (Collection<?>) value) {
                     list.add(safeValue(o, depth + 1, maxDepth));
                 }
-                out.put("value", list);
+                out.put("_value", list);
                 return out;
             }
 
@@ -55,7 +55,7 @@ public final class SafeSerializer {
                 for (int i = 0; i < len; i++) {
                     list.add(safeValue(Array.get(value, i), depth + 1, maxDepth));
                 }
-                out.put("value", list);
+                out.put("_value", list);
                 return out;
             }
 
@@ -75,7 +75,7 @@ public final class SafeSerializer {
                 }
                 fieldsMap.put(f.getName(), safeValue(fieldVal, depth + 1, maxDepth));
             }
-            map.put("value", fieldsMap);
+            map.put("_value", fieldsMap);
             return map;
 
         } catch (Throwable t) {
@@ -86,13 +86,13 @@ public final class SafeSerializer {
     private static Map<String, Object> baseMeta(Object value) {
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("_type", value.getClass().getName());
-        meta.put("_string", value.toString());
+        meta.put("_toString", value.toString());
         return meta;
     }
 
     private static Map<String, Object> buildErrorMeta(Object value, String errorMsg) {
         Map<String, Object> meta = baseMeta(value);
-        meta.put("value", Map.of("_depth", "error", "_string", errorMsg));
+        meta.put("_value", Map.of("_depth", "error", "_toString", errorMsg));
         return meta;
     }
 

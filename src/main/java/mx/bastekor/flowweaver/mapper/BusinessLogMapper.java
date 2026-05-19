@@ -29,8 +29,8 @@ public final class BusinessLogMapper {
 
         BusinessLogDTO businessLogDTO = new BusinessLogDTO();
         // Se agrega groupCode y operationCode en caso de que hayan sido vacíos desde @BusinessLog
-        businessLogDTO.setGroupCode(businessLogContainer.getGroup());
-        businessLogDTO.setOperationCode(businessLogContainer.getCode());
+        businessLogDTO.setGroup(businessLogContainer.getGroup());
+        businessLogDTO.setCode(businessLogContainer.getCode());
 
         businessLogDTO.setDescription(trim(businessLogContainer.getBusinessLog().description()));
         businessLogDTO.setDefaultDescription(trim(businessLogContainer.getBusinessLog().defaultDescription()));

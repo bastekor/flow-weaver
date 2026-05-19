@@ -50,11 +50,13 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
         final String methodDuration = businessLogContainer.getDuration(); // Tiempo que tomo tomar data "snapshot"
         final Instant start = Instant.now(); // Inicio de lógica de negocio.
         final BusinessLogDTO businessLogDTO = this.getBusinessLogDTO(businessLogContainer);
+        businessLogDTO.setCorrelationId(businessLogContainer.getCorrelationId());
 
         final RequestDTO requestDTO = RequestDTO.builder()
-                .id(businessLogContainer.getId())
-                .groupCode(businessLogDTO.getGroupCode())
-                .flowCode(businessLogDTO.getOperationCode())
+                .id(businessLogDTO.getCorrelationId())
+                .group(businessLogDTO.getGroup())
+                .code(businessLogDTO.getCode())
+//                .description(businessLogDTO.getDescription() + businessLogDTO.getDefaultDescription())
                 .status(businessLogContainer.getStatus().name())
                 .mode(businessLogDTO.getMode().name())
 //                .data(new DataDTO()) // esto son valores reales (resueltos, no expresiones) finales del mapa data-out
@@ -65,7 +67,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
         getHostNameAndIpAddress(requestDTO);
 
         // temporal para pruebas
-        requestDTO.setResult(businessLogContainer.getExitSignature());
+//        requestDTO.setResult(businessLogContainer.getExitSignature());
         final Instant end = Instant.now();
 
         try {
@@ -88,7 +90,30 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
             Map<String, BusinessLogDTO> businessLogs = businessLogConfig.getBusinessLogs();
 
 
-            log.info("Request-BusinessLog: {}", requestDTO);
+            String frame = getFrame(
+                    requestDTO.getId(),
+                    "NO_PARENT",
+                    requestDTO.getGroup(),
+                    requestDTO.getCode(),
+                    "EXIT/OUT",
+//                    requestDTO.getDescription(),
+                    requestDTO.getStatus(),
+                    requestDTO.getAppName(),
+                    requestDTO.getAppVersion(),
+                    requestDTO.getAppDescription(),
+                    requestDTO.getHostName(),
+                    requestDTO.getIpAddress()
+//                    requestDTO.getInstanceId(),
+//                    requestDTO.getRegion(),
+//                    requestDTO.getZone()
+                    );
+            log.info("Trama-BusinessLog: {}", frame);
+
+
+
+
+
+
             log.info("Config :: {}", businessLogConfig.getBusinessLogs());
         } catch (Exception e) {
             log.error(BUSINESS_ERROR, businessLogContainer.getStatus(), businessLogContainer.getCode(), e.getMessage(), e);
@@ -102,11 +127,13 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
         final String methodDuration = auditTrailContainer.getDuration();
         final Instant start = Instant.now();
         final AuditTrailDTO auditTrailDTO = this.getAuditTrailDTO(auditTrailContainer);
+        auditTrailDTO.setCorrelationId(auditTrailContainer.getCorrelationId());
 //        final MethodContext methodContext = createMethodContext(joinPoint, null, null);
         final String status = auditTrailContainer.getStatus() == null ? null : auditTrailContainer.getStatus().name();
         final RequestDTO requestDTO = RequestDTO.builder()
-                .id(auditTrailContainer.getCorrelationId())
-                .flowCode(auditTrailDTO.getFlowCode())
+                .id(auditTrailDTO.getCorrelationId())
+                .group(auditTrailDTO.getGroup())
+                .code(auditTrailDTO.getCode())
                 .status(status)
                 .mode(auditTrailDTO.getMode().name())
 //                .data(new DataDTO()) // esto son valores reales finales
@@ -139,7 +166,24 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
                 Cuando se mande una excepción (NullPointerException, IndexOutOfBoundsException, etc.) que no sea controlada
                 por nosotros y que se entienda se esté estimando mal la extracción de la data.
              */
-            log.info("Request-AuditTrail: {}", requestDTO);
+            String frame = getFrame(
+                    requestDTO.getId(),
+                    auditTrailContainer.getParentCode(),
+                    requestDTO.getGroup(),
+                    requestDTO.getCode(),
+                    auditTrailContainer.getEntrySignature() != null ? "ENTRY/IN" : "EXIT/OUT",
+//                    requestDTO.getDescription(),
+                    requestDTO.getStatus(),
+                    requestDTO.getAppName(),
+                    requestDTO.getAppVersion(),
+                    requestDTO.getAppDescription(),
+                    requestDTO.getHostName(),
+                    requestDTO.getIpAddress()
+//                    requestDTO.getInstanceId(),
+//                    requestDTO.getRegion(),
+//                    requestDTO.getZone()
+            );
+            log.info("Trama-AuditTrail: {}", frame);
             log.info("Config :: {}", businessLogConfig.getAuditTrails());
         } catch (Exception e) {
             log.error(AUDIT_ERROR, auditTrailContainer.getStatus(), auditTrailContainer.getCorrelationId(), e.getMessage(), e);
@@ -192,5 +236,9 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
             case DYNAMIC -> atDynamic;
             case MERGED -> utilMapper.mergeAuditTrailDTO(atDynamic, atStatic);
         };
+    }
+
+    private String getFrame(String ...args) {
+        return String.join("|", args);
     }
 }
