@@ -26,5 +26,16 @@
                 "value": "reached"
             }
         }
+    },
+    "maps": {
+        "map1": {
+            "value": "value map1"
+        },
+        "map2": {
+            "value": "value map2"
+        },
+        "map3": {
+            "value": "value map3"
+        }
     }
 }

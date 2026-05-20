@@ -1,5 +1,6 @@
 package mx.bastekor.flowweaver.resolver;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
@@ -7,8 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Resuelve expresiones de acceso a datos contra cualquier árbol JSON.
@@ -25,10 +24,6 @@ import java.util.regex.Pattern;
  *   ["texto"]          → key literal de mapa (con comillas dobles)
  *   ['texto']          → key literal de mapa (con comillas simples)
  *   n                  → número desnudo como índice de array
- *   args[n]  arg[n]    → array index con prefijo args/arg + brackets
- *   argsn   argn       → array index con prefijo args/arg desnudo
- *   args_n  arg_n      → array index con guión bajo
- *   args-n  arg-n      → array index con guión medio
  * </pre>
  * <p>
  * Los segmentos se separan por punto ({@code .}). Un segmento puede
@@ -40,44 +35,14 @@ public final class ExpressionResolver {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private static final Pattern ARGS_PATTERN =
-            Pattern.compile("^(args|arg)(?:\\[(-?\\d+)]|_(-?\\d+)|(-?\\d+))$",
-                    Pattern.CASE_INSENSITIVE);
-
-    private static final Pattern BRACKET_GROUP =
-            Pattern.compile("\\[[^]]*]"); // fallback no usado
-
     // ---------------------------------------------------------------
-    //  API pública
+    //  API pública — original (firmas intactas)
     // ---------------------------------------------------------------
 
-    /**
-     * Resuelve una expresión desde la raíz del JSON.
-     *
-     * @param jsonSnapshot JSON string
-     * @param expression   expresión de acceso
-     * @return valor textual del nodo terminal, o {@code null}
-     */
     public static String resolve(String jsonSnapshot, String expression) {
-        return resolve(jsonSnapshot, "json", expression);
+        return resolve(jsonSnapshot, null, expression);
     }
 
-    /**
-     * Resuelve una expresión contra un nodo específico del JSON.
-     * <p>
-     * El {@code rootScope} indica el punto de partida. Ejemplos:
-     * <ul>
-     *   <li>{@code "json"} → la raíz</li>
-     *   <li>{@code "_args"} → el array de argumentos</li>
-     *   <li>{@code "json._args"} → raíz + _args</li>
-     *   <li>{@code "data.users"} → cualquier ruta</li>
-     * </ul>
-     *
-     * @param jsonSnapshot JSON string
-     * @param rootScope    nodo de partida ({@code null} → {@code "json"})
-     * @param expression   expresión relativa al {@code rootScope}
-     * @return valor textual del nodo terminal, o {@code null}
-     */
     public static String resolve(String jsonSnapshot, String rootScope, String expression) {
         if (jsonSnapshot == null || expression == null || expression.isBlank()) {
             return null;
@@ -85,66 +50,247 @@ public final class ExpressionResolver {
         try {
             JsonNode root = MAPPER.readTree(jsonSnapshot);
             JsonNode start = resolveScope(root, rootScope);
-            if (start == null) {
-                return null;
-            }
-            JsonNode node = navigate(start, expression.trim());
-            return extractValue(node);
+            if (start == null) return null;
+            NavResult nav = navigateWithPath(start, expression.trim());
+            return extractValue(nav.node);
         } catch (Exception e) {
             return null;
         }
     }
 
     // ---------------------------------------------------------------
+    //  API pública — resolveDetailed (POJO)
+    // ---------------------------------------------------------------
+
+    public static ResolutionResult resolveDetailed(String jsonSnapshot, String expression) {
+        return resolveDetailed(jsonSnapshot, null, expression);
+    }
+
+    public static ResolutionResult resolveDetailed(String jsonSnapshot, String rootScope, String expression) {
+        long startNanos = System.nanoTime();
+
+        List<String> tokens = (expression == null || expression.isBlank())
+                ? List.of() : tokenize(expression.trim());
+        String suggested = computeSuggested(tokens);
+
+        // Validaciones de entrada
+        if (jsonSnapshot == null) {
+            return failedResult(null, rootScope, expression, suggested,
+                    "Snapshot is null", asScope(rootScope), null, startNanos);
+        }
+        if (expression == null) {
+            return failedResult(jsonSnapshot, rootScope, null, suggested,
+                    "Expression is null", asScope(rootScope), null, startNanos);
+        }
+        if (expression.isBlank()) {
+            return failedResult(jsonSnapshot, rootScope, expression, suggested,
+                    "Expression is " + describeBlank(expression), asScope(rootScope), null, startNanos);
+        }
+
+        // Parsear JSON
+        JsonNode root;
+        try {
+            root = MAPPER.readTree(jsonSnapshot);
+        } catch (JsonParseException e) {
+            return failedResult(jsonSnapshot, rootScope, expression, suggested,
+                    "Invalid JSON: " + e.getOriginalMessage(), "root",
+                    List.of("Verify JSON syntax near line " + e.getLocation().getLineNr()), startNanos);
+        } catch (Exception e) {
+            return failedResult(jsonSnapshot, rootScope, expression, suggested,
+                    "Invalid JSON: " + e.getMessage(), "root",
+                    List.of("Verify the JSON structure"), startNanos);
+        }
+
+        // Resolver scope
+        JsonNode start = resolveScope(root, rootScope);
+        if (start == null) {
+            return failedResult(jsonSnapshot, rootScope, expression, suggested,
+                    "Scope '" + rootScope + "' not found in root", "root",
+                    buildScopeSuggestions(root, rootScope), startNanos);
+        }
+
+        // Navegar
+        NavResult nav = navigateWithPath(start, tokens);
+        long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
+
+        if (nav.node != null) {
+            String value = extractValue(nav.node);
+            return new ResolutionResult(jsonSnapshot, rootScope, expression, suggested,
+                    value, elapsedMs, nav.resolvedPath, null);
+        }
+
+        ResolutionError error = buildError(nav, rootScope);
+        return new ResolutionResult(jsonSnapshot, rootScope, expression, suggested,
+                null, elapsedMs, nav.resolvedPath, error);
+    }
+
+    // ---------------------------------------------------------------
+    //  API pública — resolveDetailedAsJson (String)
+    // ---------------------------------------------------------------
+
+    public static String resolveDetailedAsJson(String jsonSnapshot, String expression) {
+        return resolveDetailedAsJson(jsonSnapshot, null, expression);
+    }
+
+    public static String resolveDetailedAsJson(String jsonSnapshot, String rootScope, String expression) {
+        try {
+            ResolutionResult result = resolveDetailed(jsonSnapshot, rootScope, expression);
+            return MAPPER.writeValueAsString(result);
+        } catch (Exception e) {
+            ResolutionResult fallback = failedResult(jsonSnapshot, rootScope, expression, null,
+                    "Serialization error: " + e.getMessage(), asScope(rootScope), null, System.nanoTime());
+            try {
+                return MAPPER.writeValueAsString(fallback);
+            } catch (Exception ex) {
+                return "{\"error\":{\"message\":\"Critical serialization failure\"}}";
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------
+    //  Internos: construcción de resultado detallado
+    // ---------------------------------------------------------------
+
+    private static String computeSuggested(List<String> tokens) {
+        if (tokens == null || tokens.isEmpty()) return null;
+        StringBuilder sb = new StringBuilder();
+        for (String seg : tokens) {
+            if (!sb.isEmpty()) sb.append('.');
+            if (seg.startsWith("[")) {
+                String inner = seg.substring(1, seg.length() - 1);
+                if (isQuoted(inner)) {
+                    sb.append('[').append(inner.substring(1, inner.length() - 1)).append(']');
+                    continue;
+                }
+                if (inner.chars().allMatch(Character::isDigit)
+                        || (inner.startsWith("-") && inner.substring(1).chars().allMatch(Character::isDigit))) {
+                    sb.append(inner);
+                    continue;
+                }
+            }
+            sb.append(seg);
+        }
+        return sb.toString();
+    }
+
+    private static String describeBlank(String s) {
+        if (s == null) return "null";
+        return s.isEmpty() ? "EMPTY" : "BLANK";
+    }
+
+    private static String asScope(String scope) {
+        return scope == null ? null : scope.trim();
+    }
+
+    private static ResolutionResult failedResult(String snapshot, String scope, String expr,
+                                                  String suggested, String message, String lastPath,
+                                                  List<String> suggestions, long startNanos) {
+        long elapsed = (System.nanoTime() - startNanos) / 1_000_000;
+        List<String> sug = suggestions != null ? suggestions : List.of();
+        ResolutionError err = new ResolutionError(message, lastPath, sug);
+        return new ResolutionResult(snapshot, scope, expr, suggested, null,
+                elapsed, "", err);
+    }
+
+    private static ResolutionError buildError(NavResult nav, String rootScope) {
+        String seg = nav.failedSegment;
+        JsonNode parent = nav.parentNode;
+        String displayPath = nav.resolvedPath.isEmpty()
+                ? "snapshot JSON" : nav.resolvedPath;
+        String lastPath = nav.resolvedPath.isEmpty()
+                ? asScope(rootScope) : nav.resolvedPath;
+
+        String message = "Field '" + seg + "' not found in '" + displayPath + "'";
+        List<String> suggestions = buildSuggestions(parent, seg, displayPath);
+        return new ResolutionError(message, lastPath, suggestions);
+    }
+
+    private static List<String> buildSuggestions(JsonNode parent, String segment, String nodePath) {
+        List<String> sug = new ArrayList<>();
+
+        if (parent != null && parent.isObject()) {
+            List<String> fields = new ArrayList<>();
+            parent.fieldNames().forEachRemaining(fields::add);
+            if (!fields.isEmpty()) {
+                sug.add("Available fields in '" + nodePath + "': " + String.join(", ", fields));
+            } else {
+                sug.add("Node '" + nodePath + "' is an object with no fields");
+            }
+        } else if (parent != null && parent.isArray()) {
+            sug.add("Node '" + nodePath + "' is an array with " + parent.size()
+                    + " elements. Use array index syntax [n] or [-n]");
+        }
+
+        if (segment != null && segment.contains(".") && !segment.startsWith("[")) {
+            sug.add("Field '" + segment + "' contains a dot. Try bracket syntax: [\"" + segment + "\"]");
+        }
+
+        if (sug.isEmpty()) {
+            sug.add("Verify the expression syntax and the JSON structure");
+        }
+
+        return sug;
+    }
+
+    private static List<String> buildScopeSuggestions(JsonNode root, String scope) {
+        List<String> sug = new ArrayList<>();
+        if (root != null && root.isObject()) {
+            List<String> topFields = new ArrayList<>();
+            root.fieldNames().forEachRemaining(topFields::add);
+            if (!topFields.isEmpty()) {
+                sug.add("Available root fields: " + String.join(", ", topFields));
+            }
+        }
+        sug.add("Verify that the scope path exists in the JSON structure");
+        return sug;
+    }
+
+    // ---------------------------------------------------------------
     //  Scope
     // ---------------------------------------------------------------
 
-    /**
-     * Determina el nodo de partida a partir del scope.
-     * {@code null} / vacío / {@code "json"} → raíz.
-     * {@code "json.algo"} → quita prefijo y navega.
-     */
     private static JsonNode resolveScope(JsonNode root, String scope) {
-        if (scope == null) {
-            return root;
-        }
+        if (scope == null) return root;
         String s = scope.trim();
-        if (s.isEmpty() || "json".equalsIgnoreCase(s)) {
-            return root;
-        }
-        if (s.toLowerCase().startsWith("json.")) {
-            s = s.substring(5);
-        }
-        return s.isEmpty() ? root : navigate(root, s);
+        return s.isEmpty() ? root : navigateWithPath(root, s).node;
     }
 
     // ---------------------------------------------------------------
-    //  Navegación
+    //  Navegación con tracking de ruta
     // ---------------------------------------------------------------
 
     /**
-     * Navega desde un nodo siguiendo una ruta de segmentos separados por
-     * punto. Expande automáticamente {@code campo[índice]} en dos pasos.
+     * Navega desde un nodo siguiendo una ruta de segmentos, pero
+     * captura el punto exacto de falla en un {@link NavResult}.
      */
-    private static JsonNode navigate(JsonNode start, String path) {
-        List<String> segments = tokenize(path);
+    private static NavResult navigateWithPath(JsonNode start, String path) {
+        return navigateWithPath(start, tokenize(path));
+    }
+
+    private static NavResult navigateWithPath(JsonNode start, List<String> tokens) {
         JsonNode current = start;
-        for (String segment : segments) {
-            current = navigateSegment(current, segment);
-            if (current == null) {
-                return null;
+        StringBuilder resolved = new StringBuilder();
+
+        for (String segment : tokens) {
+            JsonNode next = navigateSegment(current, segment);
+            if (next == null) {
+                return new NavResult(null, resolved.toString(), segment, current);
             }
+            if (segment.startsWith("[")) {
+                resolved.append(segment);
+            } else {
+                if (!resolved.isEmpty()) resolved.append(".");
+                resolved.append(segment);
+            }
+            current = next;
         }
-        return current;
+        return new NavResult(current, resolved.toString(), null, null);
     }
 
-    /**
-     * Convierte una ruta punteada en una lista plana de segmentos.
-     * <p>
-     * Respeta dots dentro de brackets ({@code config["my.key"]} no se parte
-     * por el punto dentro de las comillas). Expande
-     * {@code campo[índice]} en {@code campo} + {@code [índice]}.
-     */
+    // ---------------------------------------------------------------
+    //  Tokenizer
+    // ---------------------------------------------------------------
+
     private static List<String> tokenize(String path) {
         List<String> raw = new ArrayList<>();
         int start = 0, depth = 0;
@@ -170,20 +316,12 @@ public final class ExpressionResolver {
         }
         if (start < path.length()) raw.add(path.substring(start));
 
-        // Expandir campo[índice] → campo + [índice]
-        // Los prefijos args/arg se mantienen unidos para que ARGS_PATTERN
-        // pueda capturarlos como una sola unidad sintáctica.
         List<String> tokens = new ArrayList<>();
         for (String seg : raw) {
             if (seg.isEmpty()) continue;
             int idx = seg.indexOf('[');
             if (idx > 0) {
-                String prefix = seg.substring(0, idx);
-                if (prefix.equalsIgnoreCase("args") || prefix.equalsIgnoreCase("arg")) {
-                    tokens.add(seg);
-                    continue;
-                }
-                tokens.add(prefix);
+                tokens.add(seg.substring(0, idx));
                 splitBracketGroups(seg.substring(idx), tokens);
             } else if (idx == 0) {
                 splitBracketGroups(seg, tokens);
@@ -194,15 +332,11 @@ public final class ExpressionResolver {
         return tokens;
     }
 
-    /**
-     * Divide {@code s} en grupos de brackets respetando profundidad
-     * (soporta {@code ]} dentro de contenido, ej. {@code ["data[0]"]}).
-     */
     private static void splitBracketGroups(String s, List<String> out) {
         int i = 0;
         while (i < s.length()) {
             if (s.charAt(i) == '[') {
-                int depth = 0, start = i;
+                int depth = 0, bStart = i;
                 boolean inQ = false;
                 char qc = 0;
                 while (i < s.length()) {
@@ -217,7 +351,7 @@ public final class ExpressionResolver {
                     } else if (c == ']') {
                         depth--;
                         if (depth == 0) {
-                            out.add(s.substring(start, i + 1));
+                            out.add(s.substring(bStart, i + 1));
                             i++;
                             break;
                         }
@@ -244,13 +378,6 @@ public final class ExpressionResolver {
         }
         if (segment.chars().allMatch(Character::isDigit) || segment.matches("-\\d+")) {
             return arrayIndex(node, Integer.parseInt(segment));
-        }
-        Matcher m = ARGS_PATTERN.matcher(segment);
-        if (m.find()) {
-            String num = m.group(2) != null ? m.group(2)
-                    : m.group(3) != null ? m.group(3)
-                      : m.group(4);
-            return arrayIndex(node, Integer.parseInt(num));
         }
         return node.get(segment);
     }
@@ -314,5 +441,23 @@ public final class ExpressionResolver {
         if (node.isNumber()) return node.asText();
         if (node.isBoolean()) return Boolean.toString(node.asBoolean());
         return null;
+    }
+
+    // ---------------------------------------------------------------
+    //  Inner class: resultado intermedio de navegación
+    // ---------------------------------------------------------------
+
+    private static class NavResult {
+        final JsonNode node;
+        final String resolvedPath;
+        final String failedSegment;
+        final JsonNode parentNode;
+
+        NavResult(JsonNode node, String resolvedPath, String failedSegment, JsonNode parentNode) {
+            this.node = node;
+            this.resolvedPath = resolvedPath;
+            this.failedSegment = failedSegment;
+            this.parentNode = parentNode;
+        }
     }
 }

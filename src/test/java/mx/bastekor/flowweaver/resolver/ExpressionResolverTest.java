@@ -1,27 +1,24 @@
 package mx.bastekor.flowweaver.resolver;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ExpressionResolverTest {
-
-    private static String json(String resource) {
-        try {
-            var is = Objects.requireNonNull(
-                    ExpressionResolverTest.class.getResourceAsStream(resource),
-                    "Resource not found: " + resource);
-            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to read " + resource, e);
-        }
-    }
 
     private static final String MC = json("/snapshots/method-contract.jsonc");
     private static final String SP = json("/snapshots/simple-primitives.json");
@@ -33,6 +30,17 @@ class ExpressionResolverTest {
     private static final String MATRIX = json("/snapshots/matrix-3d.json");
     private static final String MAPS = json("/snapshots/maps-nested.json");
     private static final String PROF = json("/snapshots/profiles.json");
+
+    private static String json(String resource) {
+        try {
+            var is = Objects.requireNonNull(
+                    ExpressionResolverTest.class.getResourceAsStream(resource),
+                    "Resource not found: " + resource);
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to read " + resource, e);
+        }
+    }
 
     // ===================================================================
     //  chain-10.json — 10 niveles de objetos anidados
@@ -77,6 +85,7 @@ class ExpressionResolverTest {
             "tags[4],       epsilon",
             "metadata.dimensions[0], 2",
             "metadata.dimensions[-1], 3",
+            "grid.0.0.0,              a00",
             "metadata.labels.first,   matrix-A",
     })
     void matrix3d(String expr, String expected) {
@@ -93,23 +102,6 @@ class ExpressionResolverTest {
             "grid[-1][-1][-1], b22",
     })
     void matrixNegative(String expr, String expected) {
-        asserts(MATRIX, expr, expected);
-    }
-
-    // sintaxis alternativa: .0 en vez de [0], args/arg patterns
-    @ParameterizedTest
-    @CsvSource({
-            "grid.0.0.0,       a00",
-            "tags.args0,       alpha",
-            "tags.arg0,        alpha",
-            "tags.args_4,      epsilon",
-            "tags.arg-1,       epsilon",
-            "tags.args[1],     beta",
-            "tags.arg[-2],     delta",
-            "tags.args-2,      delta",
-            "tags.arg_3,       delta",
-    })
-    void matrixAltSyntax(String expr, String expected) {
         asserts(MATRIX, expr, expected);
     }
 
@@ -130,6 +122,11 @@ class ExpressionResolverTest {
             "mixed.plain,                   plain-field",
             "mixed[\"data[0]\"],             bracket-field",
             "mixed.args,                    args-field",
+            "maps.map1.value,               value map1",
+            "maps[\"map2\"].value,           value map2",
+            "maps.map3.value,               value map3",
+            "maps[\"map1\"].value,           value map1",
+            "maps.map1,                     __NULL__",
     })
     void mapsNested(String expr, String expected) {
         asserts(MAPS, expr, expected);
@@ -299,8 +296,6 @@ class ExpressionResolverTest {
 
     @ParameterizedTest
     @CsvSource({
-            "json, app,               FlowWeaver",
-            "json, features.logging,  true",
             "tags, 0,                 beta",
             "tags, -1,                experimental",
     })
@@ -351,6 +346,143 @@ class ExpressionResolverTest {
     @Test
     void scopeNonExistent() {
         assertNull(ExpressionResolver.resolve(FLAT, "no.existe", "algo"));
+    }
+
+    // ===================================================================
+    //  resolveDetailed — resultado enriquecido (POJO)
+    // ===================================================================
+
+    @ParameterizedTest
+    @MethodSource("detailedSuccessSource")
+    void detailedSuccess(String expr, String value, String suggested, String resolvedPath) {
+        ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, expr);
+        assertNull(r.getError());
+        assertEquals(value, r.getValue());
+        assertEquals(suggested, r.getSuggested());
+        assertEquals(resolvedPath, r.getResolvedPath());
+        assertTrue(r.getDurationMs() >= 0);
+    }
+
+    static Stream<Arguments> detailedSuccessSource() {
+        return Stream.of(
+                Arguments.of("app", "FlowWeaver", "app", "app"),
+                Arguments.of("features.logging", "true", "features.logging", "features.logging"),
+                Arguments.of("tags[-1]", "experimental", "tags.-1", "tags[-1]")
+        );
+    }
+
+    @Test
+    void detailedWithScope() {
+        ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, null, "app");
+        assertNull(r.getError());
+        assertEquals("FlowWeaver", r.getValue());
+        assertEquals("app", r.getSuggested());
+        assertEquals("app", r.getResolvedPath());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "null,   app,   Snapshot is null",
+            "FLAT,   NULL,  Expression is null",
+            "FLAT,   EMPTY, Expression is EMPTY",
+            "FLAT,   BLANK, Expression is BLANK",
+    })
+    void detailedInputValidation(String jsonKey, String exprSentinel, String expectedMessage) {
+        String json = "null".equals(jsonKey) ? null : FLAT;
+        String expr = "NULL".equals(exprSentinel) ? null :
+                      "EMPTY".equals(exprSentinel) ? "" :
+                      "BLANK".equals(exprSentinel) ? "   " : exprSentinel;
+        ResolutionResult r = ExpressionResolver.resolveDetailed(json, expr);
+        assertNotNull(r.getError());
+        assertTrue(r.getError().getMessage().contains(expectedMessage));
+    }
+
+    @Test
+    void detailedNonExistentPath() {
+        ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, "no.existe.campo");
+        assertNotNull(r.getError());
+        assertEquals("", r.getResolvedPath());
+        assertEquals("Field 'no' not found in 'snapshot JSON'", r.getError().getMessage());
+        assertNull(r.getError().getLastPath());
+        assertNotNull(r.getError().getSuggestions());
+        assertFalse(r.getError().getSuggestions().isEmpty());
+    }
+
+    @Test
+    void detailedPathResolvedPartially() {
+        ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, "features.nonexistent");
+        assertNotNull(r.getError());
+        assertEquals("features", r.getResolvedPath());
+        assertEquals("Field 'nonexistent' not found in 'features'", r.getError().getMessage());
+    }
+
+    @Test
+    void detailedErrorSuggestionsObjectField() {
+        ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, "features.xyz");
+        assertNotNull(r.getError());
+        List<String> sug = r.getError().getSuggestions();
+        assertFalse(sug.isEmpty());
+        boolean hasFields = sug.stream().anyMatch(s -> s.contains("Available fields"));
+        assertTrue(hasFields, "Should suggest available fields: " + sug);
+    }
+
+    @Test
+    void detailedErrorSuggestionsArrayField() {
+        ResolutionResult r = ExpressionResolver.resolveDetailed(MATRIX, "tags.nonexistent");
+        assertNotNull(r.getError());
+        assertEquals("tags", r.getResolvedPath());
+        List<String> sug = r.getError().getSuggestions();
+        assertFalse(sug.isEmpty());
+        boolean hasArray = sug.stream().anyMatch(s -> s.contains("array"));
+        assertTrue(hasArray, "Should suggest array syntax: " + sug);
+    }
+
+    // ===================================================================
+    //  resolveDetailedAsJson — resultado como JSON string
+    // ===================================================================
+
+    @Test
+    void detailedAsJsonSuccess() throws Exception {
+        String json = ExpressionResolver.resolveDetailedAsJson(FLAT, "app");
+        assertNotNull(json);
+        JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+        assertEquals("FlowWeaver", node.get("value").asText());
+        assertEquals("app", node.get("suggested").asText());
+        assertTrue(node.get("error").isNull());
+    }
+
+    @Test
+    void detailedAsJsonError() throws Exception {
+        String json = ExpressionResolver.resolveDetailedAsJson(null, "app");
+        assertNotNull(json);
+        JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+        assertTrue(node.get("value").isNull());
+        assertFalse(node.get("error").isNull());
+        assertEquals("Snapshot is null", node.get("error").get("message").asText());
+    }
+
+    @Test
+    void detailedAsJsonWithScope() throws Exception {
+        String json = ExpressionResolver.resolveDetailedAsJson(FLAT, "tags", "0");
+        assertNotNull(json);
+        JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+        assertEquals("beta", node.get("value").asText());
+        assertEquals("tags", node.get("rootScope").asText());
+    }
+
+    @Test
+    void detailedAsJsonSerializationError() {
+        // Ciclo o extremo que fuerce error de serialización — improbable,
+        // pero el método no debe lanzar.
+        String json = ExpressionResolver.resolveDetailedAsJson(null, null);
+        assertNotNull(json);
+    }
+
+    // snapshot incluido en el resultado
+    @Test
+    void detailedSnapshotEchoed() {
+        ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, "app");
+        assertEquals(FLAT, r.getSnapshot());
     }
 
     // ===================================================================
