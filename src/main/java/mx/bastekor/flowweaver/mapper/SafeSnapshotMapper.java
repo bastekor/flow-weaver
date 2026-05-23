@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static mx.bastekor.flowweaver.model.SafeSerializer.rawValue;
 import static mx.bastekor.flowweaver.model.SafeSerializer.safeValue;
 
 @NoArgsConstructor(access = lombok.AccessLevel.PRIVATE)
@@ -47,7 +48,34 @@ public final class SafeSnapshotMapper {
         }
     }
 
-    public static String mapArgs(Method method, Object[] args, int maxDepth) throws Exception {
+    /**
+     * Serializa un objeto (response, exception, etc.) a JSON con un prefijo sem&aacute;ntico.
+     * <p>
+     * Si el objeto es una instancia de {@link Throwable} el prefijo ser&aacute;
+     * {@code "exception"}; en cualquier otro caso ser&aacute; {@code "response"}.
+     * <p>
+     * El JSON generado puede consultarse directamente con {@link
+     * mx.bastekor.flowweaver.resolver.ExpressionResolver}:
+     * <pre>
+     *   ExpressionResolver.resolve(mapObject(persona, 3), "response.name")
+     * </pre>
+     *
+     * @param value    objeto a serializar
+     * @param maxDepth profundidad m&aacute;xima de anidamiento
+     * @return JSON con un nodo ra&iacute;z {@code "response"} o {@code "exception"}
+     */
+    public static String mapObject(Object value, int maxDepth) {
+        try {
+            String prefix = (value instanceof Throwable) ? "exception" : "response";
+            Map<String, Object> root = new LinkedHashMap<>();
+            root.put(prefix, rawValue(value, 0, maxDepth));
+            return MAPPER.writeValueAsString(root);
+        } catch (Exception e) {
+            return "{\"error\":\"Failed to serialize object: " + e.getMessage() + "\"}";
+        }
+    }
+
+    private static String mapArgs(Method method, Object[] args, int maxDepth) throws Exception {
         Parameter[] parameters = method.getParameters();
 
         Map<String, Object> root = new LinkedHashMap<>();
@@ -86,6 +114,7 @@ public final class SafeSnapshotMapper {
             }
 
             argsList.add(argMap);
+            root.put("args" + i, rawValue(args[i], 0, maxDepth));
         }
         root.put("_args", argsList);
         return MAPPER.writeValueAsString(root);

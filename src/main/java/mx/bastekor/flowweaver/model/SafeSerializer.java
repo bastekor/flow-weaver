@@ -11,6 +11,97 @@ import java.util.*;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SafeSerializer {
 
+    /**
+     * Versiónn sin envolturas de {@link #safeValue}.
+     * <p>
+     * No añade metadatos ({@code _type}, {@code _toString}, {@code _value}).
+     * Retorna el objeto crudo para que Jackson lo serialice con su tipo natural:
+     * <ul>
+     *   <li>String → {@code "texto"}</li>
+     *   <li>Integer → {@code 42}</li>
+     *   <li>Boolean → {@code true} / {@code false}</li>
+     *   <li>Map / POJO → {@code { ... }} anidado sin envoltura</li>
+     *   <li>Collection / Array → {@code [...]} sin envoltura</li>
+     * </ul>
+     * <p>
+     * Cuando se alcanza {@code depth >= maxDepth} retorna un String plano
+     * {@code "depth_limit_reached " + value} en lugar de un mapa con metadatos.
+     *
+     * @param value    objeto a serializar
+     * @param depth    profundidad actual (quien llama inicia en 0)
+     * @param maxDepth profundidad m&aacute;xima permitida
+     * @return representaci&oacute;n cruda del objeto, null si value es null
+     */
+    public static Object rawValue(Object value, int depth, int maxDepth) {
+        if (value == null) {
+            return null;
+        }
+
+        if (depth >= maxDepth) {
+            return "depth_limit_reached " + value;
+        }
+
+        if (isSimple(value)) {
+            return value;
+        }
+
+        try {
+            if (value instanceof Map) {
+                Map<Object, Object> in = (Map<Object, Object>) value;
+                Map<String, Object> out = new LinkedHashMap<>();
+                for (Map.Entry<Object, Object> e : in.entrySet()) {
+                    out.put(String.valueOf(e.getKey()), rawValue(e.getValue(), depth + 1, maxDepth));
+                }
+                return out;
+            }
+
+            if (value instanceof Collection) {
+                List<Object> list = new ArrayList<>();
+                for (Object o : (Collection<?>) value) {
+                    list.add(rawValue(o, depth + 1, maxDepth));
+                }
+                return list;
+            }
+
+            if (value.getClass().isArray()) {
+                int len = Array.getLength(value);
+                List<Object> list = new ArrayList<>(len);
+                for (int i = 0; i < len; i++) {
+                    list.add(rawValue(Array.get(value, i), depth + 1, maxDepth));
+                }
+                return list;
+            }
+
+            if (isNotSerializable(value)) {
+                return "NOT_SERIALIZABLE: " + value.getClass().getName();
+            }
+
+            Map<String, Object> fieldsMap = new LinkedHashMap<>();
+
+            if (value instanceof Throwable t) {
+                fieldsMap.put("message", t.getMessage());
+                fieldsMap.put("cause", rawValue(t.getCause(), depth + 1, maxDepth));
+//                fieldsMap.put("stackTrace", rawValue(t.getStackTrace(), depth + 1, maxDepth)); // Pendiente atenci&oacute;n
+            }
+            for (Class<?> clazz = value.getClass(); clazz != null && clazz != Object.class; clazz = clazz.getSuperclass()) {
+                for (Field f : clazz.getDeclaredFields()) {
+                    Object fieldVal;
+                    try {
+                        f.setAccessible(true);
+                        fieldVal = f.get(value);
+                    } catch (Exception e) {
+                        fieldVal = "[unreadable:" + f.getName() + "]";
+                    }
+                    fieldsMap.putIfAbsent(f.getName(), rawValue(fieldVal, depth + 1, maxDepth));
+                }
+            }
+            return fieldsMap;
+
+        } catch (Throwable t) {
+            return "NOT_SERIALIZABLE (" + t.getClass().getSimpleName() + "): " + value;
+        }
+    }
+
     public static Object safeValue(Object value, int depth, int maxDepth) {
         if (value == null) {
             return null;

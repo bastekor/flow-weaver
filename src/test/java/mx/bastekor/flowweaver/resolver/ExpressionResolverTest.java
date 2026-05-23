@@ -1,12 +1,15 @@
 package mx.bastekor.flowweaver.resolver;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import mx.bastekor.flowweaver.mapper.SafeSnapshotMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -400,6 +403,7 @@ class ExpressionResolverTest {
     @Test
     void detailedNonExistentPath() {
         ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, "no.existe.campo");
+        System.out.println(r);
         assertNotNull(r.getError());
         assertEquals("", r.getResolvedPath());
         assertEquals("Field 'no' not found in 'snapshot JSON'", r.getError().getMessage());
@@ -411,6 +415,7 @@ class ExpressionResolverTest {
     @Test
     void detailedPathResolvedPartially() {
         ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, "features.nonexistent");
+        System.out.println(r);
         assertNotNull(r.getError());
         assertEquals("features", r.getResolvedPath());
         assertEquals("Field 'nonexistent' not found in 'features'", r.getError().getMessage());
@@ -420,6 +425,7 @@ class ExpressionResolverTest {
     void detailedErrorSuggestionsObjectField() {
         ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, "features.xyz");
         assertNotNull(r.getError());
+        System.out.println(r);
         List<String> sug = r.getError().getSuggestions();
         assertFalse(sug.isEmpty());
         boolean hasFields = sug.stream().anyMatch(s -> s.contains("Available fields"));
@@ -445,7 +451,7 @@ class ExpressionResolverTest {
     void detailedAsJsonSuccess() throws Exception {
         String json = ExpressionResolver.resolveDetailedAsJson(FLAT, "app");
         assertNotNull(json);
-        JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+        JsonNode node = new ObjectMapper().readTree(json);
         assertEquals("FlowWeaver", node.get("value").asText());
         assertEquals("app", node.get("suggested").asText());
         assertTrue(node.get("error").isNull());
@@ -455,7 +461,7 @@ class ExpressionResolverTest {
     void detailedAsJsonError() throws Exception {
         String json = ExpressionResolver.resolveDetailedAsJson(null, "app");
         assertNotNull(json);
-        JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+        JsonNode node = new ObjectMapper().readTree(json);
         assertTrue(node.get("value").isNull());
         assertFalse(node.get("error").isNull());
         assertEquals("Snapshot is null", node.get("error").get("message").asText());
@@ -465,7 +471,7 @@ class ExpressionResolverTest {
     void detailedAsJsonWithScope() throws Exception {
         String json = ExpressionResolver.resolveDetailedAsJson(FLAT, "tags", "0");
         assertNotNull(json);
-        JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+        JsonNode node = new ObjectMapper().readTree(json);
         assertEquals("beta", node.get("value").asText());
         assertEquals("tags", node.get("rootScope").asText());
     }
@@ -528,27 +534,78 @@ class ExpressionResolverTest {
     }
 
     // ===================================================================
-    //  Integración con SafeSnapshotMapper real
+    //  Integración — via method-contract.jsonc (MC)
+    //  MC contiene tanto _args (legacy) como argsN (raw)
+    // ===================================================================
+
+    @ParameterizedTest
+    @CsvSource({
+            "_args[0]._value, test",
+            "_args.0._toString, test",
+            "args0,            test",
+    })
+    void integrationViaMC(String expr, String expected) {
+        asserts(MC, expr, expected);
+    }
+
+    @Test
+    void integrationMC_bothStylesMatch() {
+        String legacy = ExpressionResolver.resolve(MC, "_args[0]._value");
+        String raw = ExpressionResolver.resolve(MC, "args0");
+        assertEquals(legacy, raw, "args0 y _args[0]._value deben coincidir en MC");
+    }
+
+    @Test
+    void integrationMC_rawObjectField() {
+        // args1[0].name = "Juan"
+        assertEquals("Juan", ExpressionResolver.resolve(MC, "args1[0].name"));
+        assertEquals("Juan", ExpressionResolver.resolve(MC, "args1[1].name"));
+    }
+
+    @Test
+    void integrationMC_rawDepthLimit() {
+        // args1[0].amount.currency = "depth_limit_reached USD"
+        String val = ExpressionResolver.resolve(MC, "args1[0].amount.currency");
+        assertTrue(val != null && val.startsWith("depth_limit_reached "));
+    }
+
+    @Test
+    void integrationMC_rawListIndex() {
+        assertEquals("Juan", ExpressionResolver.resolve(MC, "args1[-1].name"));
+    }
+
+    // ===================================================================
+    //  Integración — mapObject (response / exception) via API pública
     // ===================================================================
 
     @Test
-    void integrationRealSnapshot() throws Exception {
-        var method = TestService.class.getMethod("greet", String.class);
-        String snap = mx.bastekor.flowweaver.mapper.SafeSnapshotMapper.mapArgs(method, new Object[]{"Hello"}, 3);
-        assertEquals("Hello", ExpressionResolver.resolve(snap, "_args[0]._value"));
+    void integrationMapObjectResponse() {
+        String json = SafeSnapshotMapper.mapObject(Map.of("status", "OK", "code", 200), 5);
+        assertEquals("OK", ExpressionResolver.resolve(json, "response.status"));
     }
 
     @Test
-    void integrationScope() throws Exception {
-        var method = TestService.class.getMethod("greet", String.class);
-        String snap = mx.bastekor.flowweaver.mapper.SafeSnapshotMapper.mapArgs(method, new Object[]{"World"}, 3);
-        assertEquals("World", ExpressionResolver.resolve(snap, "_args[0]", "_value"));
+    void integrationMapObjectException() {
+        String json = SafeSnapshotMapper.mapObject(new RuntimeException("fail"), 5);
+        assertEquals("fail", ExpressionResolver.resolve(json, "exception.message"));
     }
 
-    static class TestService {
-        public String greet(String name) {
-            return "OK";
-        }
+    @Test
+    void integrationMapObjectNullResponse() {
+        String json = SafeSnapshotMapper.mapObject(null, 5);
+        assertNull(ExpressionResolver.resolve(json, "response"));
+    }
+
+    // ===================================================================
+    //  Integración — compatibilidad hacia atrás (MC)
+    // ===================================================================
+
+    @Test
+    void integrationBackwardCompatible() {
+        // _args sigue funcionando
+        assertEquals("test", ExpressionResolver.resolve(MC, "_args[0]._value"));
+        assertEquals("test", ExpressionResolver.resolve(MC, "_args[0]._toString"));
+        assertEquals("java.lang.String", ExpressionResolver.resolve(MC, "_args[0]._type"));
     }
 
     // ===================================================================
@@ -556,18 +613,11 @@ class ExpressionResolverTest {
     // ===================================================================
 
     private static void asserts(String json, String expr, String expected) {
-        String result = ExpressionResolver.resolve(json, expr);
-        if ("__NULL__".equals(expected)) {
-            assertNull(result, expr);
-        } else if ("__EMPTY__".equals(expected)) {
-            assertEquals("", result, expr);
-        } else {
-            assertEquals(expected, result, expr);
-        }
+        asserts(json, null,  expr, expected);
     }
 
     private static void asserts(String json, String scope, String expr, String expected) {
-        String msg = scope + " | " + expr;
+        String msg = (scope == null) ? expr : scope + " | " + expr;
         String result = ExpressionResolver.resolve(json, scope, expr);
         if ("__NULL__".equals(expected)) {
             assertNull(result, msg);
