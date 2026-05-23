@@ -15,7 +15,7 @@ import java.util.Map;
 @ToString
 @Configuration
 @ConfigurationProperties(prefix = "flow-weaver")
-public class BusinessLogConfig {
+public class FlowWeaverRootConfig {
     private Map<String, BusinessLogDTO> businessLogs;
     private Map<String, AuditTrailDTO> auditTrails;
 }

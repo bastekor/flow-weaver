@@ -8,7 +8,7 @@ import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.exception.FlowWeaverException;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
-import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
+import mx.bastekor.flowweaver.service.IFlowWeaverAspectService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -47,7 +47,7 @@ public class FlowWeaverAspect {
     @Value("${flow-weaver.max-depth:3}")
     private int maxDepth;
 
-    private final IBusinessLogAspectService businessLogAspectService;
+    private final IFlowWeaverAspectService flowWeaverAspectService;
 
     /**
      * Aspecto para @BusinessLog
@@ -145,7 +145,7 @@ public class FlowWeaverAspect {
 
     private void sendToPublish(final BusinessLogContainer businessLogContainer) {
         try {
-            businessLogAspectService.processBusinessLog(businessLogContainer);
+            flowWeaverAspectService.processBusinessLog(businessLogContainer);
         } catch (FlowWeaverException exception) {
             log.error("Error procesando BusinessLog: {}", exception.getMessage(), exception);
             // Deberemos de mandar a log datos iniciales mas errores de exc...
@@ -164,7 +164,7 @@ public class FlowWeaverAspect {
 
     private void sendToPublish(final AuditTrailContainer auditTrailContainer) {
         try {
-            businessLogAspectService.processAuditTrail(auditTrailContainer);
+            flowWeaverAspectService.processAuditTrail(auditTrailContainer);
         } catch (FlowWeaverException exception) {
             log.error("Error procesando AuditTrail: {}", exception.getMessage(), exception);
             /*

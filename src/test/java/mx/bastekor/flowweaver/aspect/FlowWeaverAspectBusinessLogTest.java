@@ -9,7 +9,7 @@ import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.context.FlowWeaverContext;
 import mx.bastekor.flowweaver.enums.Mode;
-import mx.bastekor.flowweaver.service.IBusinessLogAspectService;
+import mx.bastekor.flowweaver.service.IFlowWeaverAspectService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +59,7 @@ class FlowWeaverAspectBusinessLogTest {
     private MethodSignature methodSignature;
 
     @Mock
-    private IBusinessLogAspectService businessLogAspectService;
+    private IFlowWeaverAspectService businessLogAspectService;
 
     @InjectMocks
     private FlowWeaverAspect aspect;

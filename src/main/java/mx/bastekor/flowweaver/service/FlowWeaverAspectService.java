@@ -2,7 +2,7 @@ package mx.bastekor.flowweaver.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import mx.bastekor.flowweaver.config.BusinessLogConfig;
+import mx.bastekor.flowweaver.config.FlowWeaverRootConfig;
 import mx.bastekor.flowweaver.dto.AuditTrailDTO;
 import mx.bastekor.flowweaver.dto.BusinessLogDTO;
 import mx.bastekor.flowweaver.dto.RequestDTO;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_ERROR;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_ERROR;
@@ -24,17 +25,19 @@ import static mx.bastekor.flowweaver.mapper.BusinessLogMapper.createBusinessLogD
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.fillAppInfo;
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.fillInfrastructureInfo;
 import static mx.bastekor.flowweaver.util.BusinessLogUtils.getHostNameAndIpAddress;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.trim;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class BusinessLogAspectService implements IBusinessLogAspectService {
+public class FlowWeaverAspectService implements IFlowWeaverAspectService {
 
     /**
      * Configuración tomada del archivo de propiedades en la sección
-     * "flow-weaver.business-logs"
+     * "flow-weaver"
      */
-    private final BusinessLogConfig businessLogConfig;
+    private final FlowWeaverRootConfig flowWeaverRootConfig;
 
     /**
      * Configuración "global" del servicio.
@@ -42,6 +45,17 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
     private final Environment environment;
 
     private final UtilMapper utilMapper;
+    private String getValue(final String json, final String a, final String b, final Object response) {
+        if (isBlank(b)) {
+            return trim(a);
+        }
+        // Aquí debemos de buscar por las "n" casuisticas
+//        ExpressionResolver.resolve(json, "_args", b);
+        Set<String> rootRequest = Set.of("request", "req", "rq");
+        Set<String> rootResponse = Set.of("return", "response", "res", "rs");
+
+        return null;
+    }
 
     @Override
     @Async("flowWeaverExecutor")
@@ -58,6 +72,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
                 .code(businessLogDTO.getCode())
 //                .description(businessLogDTO.getDescription() + businessLogDTO.getDefaultDescription())
                 .status(businessLogContainer.getStatus().name())
+//                .result(businessLogDTO.getValue() + businessLogDTO.getDefaultValue()) // O exception + defaultException
                 .mode(businessLogDTO.getMode().name())
 //                .data(new DataDTO()) // esto son valores reales (resueltos, no expresiones) finales del mapa data-out
                 .build();
@@ -87,7 +102,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
                 Cuando se mande una excepción (NullPointerException, IndexOutOfBoundsException, etc.) que no sea controlada
                 por nosotros y que se entienda se esté estimando mal la extracción de la data.
              */
-            Map<String, BusinessLogDTO> businessLogs = businessLogConfig.getBusinessLogs();
+            Map<String, BusinessLogDTO> businessLogs = flowWeaverRootConfig.getBusinessLogs();
 
 
             String frame = getFrame(
@@ -114,7 +129,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
 
 
 
-            log.info("Config :: {}", businessLogConfig.getBusinessLogs());
+//            log.info("Config :: {}", flowWeaverRootConfig.getBusinessLogs());
         } catch (Exception e) {
             log.error(BUSINESS_ERROR, businessLogContainer.getStatus(), businessLogContainer.getCode(), e.getMessage(), e);
         }
@@ -184,7 +199,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
 //                    requestDTO.getZone()
             );
             log.info("Trama-AuditTrail: {}", frame);
-            log.info("Config :: {}", businessLogConfig.getAuditTrails());
+//            log.info("Config :: {}", flowWeaverRootConfig.getAuditTrails());
         } catch (Exception e) {
             log.error(AUDIT_ERROR, auditTrailContainer.getStatus(), auditTrailContainer.getCorrelationId(), e.getMessage(), e);
         }
@@ -204,7 +219,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
     private BusinessLogDTO getBusinessLogDTO(final BusinessLogContainer businessLogContainer) {
 
         BusinessLogDTO blStatic = createBusinessLogDTO(businessLogContainer);
-        BusinessLogDTO blDynamic = Optional.ofNullable(businessLogConfig.getBusinessLogs())
+        BusinessLogDTO blDynamic = Optional.ofNullable(flowWeaverRootConfig.getBusinessLogs())
                 .map(bl -> bl.get(businessLogContainer.getCode()))
                 .orElse(null);
 
@@ -227,7 +242,7 @@ public class BusinessLogAspectService implements IBusinessLogAspectService {
      */
     private AuditTrailDTO getAuditTrailDTO(final AuditTrailContainer auditTrailContainer) {
         AuditTrailDTO atStatic = createAuditTrailDTO(auditTrailContainer);
-        AuditTrailDTO atDynamic = Optional.ofNullable(businessLogConfig.getAuditTrails())
+        AuditTrailDTO atDynamic = Optional.ofNullable(flowWeaverRootConfig.getAuditTrails())
                 .map(at -> at.get(auditTrailContainer.getCode()))
                 .orElse(null);
 
