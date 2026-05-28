@@ -77,33 +77,6 @@ public final class SafeSnapshotMapper {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static void flattenPaths(String prefix, Object node, Map<String, String> out) {
-        if (node instanceof Map) {
-            for (var e : ((Map<String, Object>) node).entrySet()) {
-                String path = prefix + "." + e.getKey();
-                String shortChain = path.substring(path.indexOf('.') + 1);
-                Object val = e.getValue();
-                if (val instanceof Map) {
-                    out.putIfAbsent(e.getKey(), path);
-                    out.putIfAbsent(shortChain, path);
-                    out.putIfAbsent(path, path);
-                    flattenPaths(path, val, out);
-                } else if (val instanceof List) {
-                    out.putIfAbsent(path, path);
-                    List<Object> list = (List<Object>) val;
-                    if (!list.isEmpty() && list.get(0) instanceof Map) {
-                        flattenPaths(prefix + "[0]", list.get(0), out);
-                    }
-                } else {
-                    out.putIfAbsent(e.getKey(), path);
-                    out.putIfAbsent(shortChain, path);
-                    out.putIfAbsent(path, path);
-                }
-            }
-        }
-    }
-
     private static String mapArgs(Method method, Object[] args, int maxDepth) throws Exception {
         Parameter[] parameters = method.getParameters();
 
@@ -123,7 +96,7 @@ public final class SafeSnapshotMapper {
         root.put("_annotations", annotationsList);
 
         List<Object> argsList = new ArrayList<>();
-        Map<String, String> fields = new LinkedHashMap<>();
+        Map<String, Object> fields = new LinkedHashMap<>();
         for (int i = 0; i < parameters.length; i++) {
             Parameter parameter = parameters[i];
             Object safeResult = safeValue(args[i], 0, maxDepth);
@@ -145,12 +118,10 @@ public final class SafeSnapshotMapper {
 
             argsList.add(argMap);
             String prefix = "args" + i;
-            root.put(prefix, rawValue(args[i], 0, maxDepth));
-            fields.putIfAbsent(parameter.getName(), prefix);
-            Object raw = root.get(prefix);
-            if (raw instanceof Map) {
-                flattenPaths(prefix, raw, fields);
-            }
+            Object raw = rawValue(args[i], 0, maxDepth);
+            root.put(prefix, raw);
+            fields.put("args" + i, raw);
+            fields.put(parameter.getName(), raw);
         }
         root.put("_args", argsList);
         root.put("_fields", fields);

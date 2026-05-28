@@ -98,13 +98,43 @@
         }
     ],
     "_fields": {
-        "code": "args0",
-        "persons": "args1",
-        "name": "args1[0].name",
-        "email": "args1[0].email",
-        "amount": "args1[0].amount",
-        "currency": "args1[0].amount.currency",
-        "amount.currency": "args1[0].amount.currency",
-        "amount.amount": "args1[0].amount.amount"
+        "args0": "test",
+        "code": "test",
+        "args1": [
+            {
+                "name": "Juan",
+                "email": "juan@email.com",
+                "amount": {
+                    "currency": "depth_limit_reached USD",
+                    "amount": "depth_limit_reached 100"
+                }
+            },
+            {
+                "name": "Juan",
+                "email": "juan@email.com",
+                "amount": {
+                    "currency": "depth_limit_reached USD",
+                    "amount": "depth_limit_reached 100"
+                }
+            }
+        ],
+        "persons": [
+            {
+                "name": "Juan",
+                "email": "juan@email.com",
+                "amount": {
+                    "currency": "depth_limit_reached USD",
+                    "amount": "depth_limit_reached 100"
+                }
+            },
+            {
+                "name": "Juan",
+                "email": "juan@email.com",
+                "amount": {
+                    "currency": "depth_limit_reached USD",
+                    "amount": "depth_limit_reached 100"
+                }
+            }
+        ]
     }
 }
