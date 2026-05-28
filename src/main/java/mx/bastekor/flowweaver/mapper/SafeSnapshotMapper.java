@@ -42,17 +42,17 @@ public final class SafeSnapshotMapper {
             Method method = signature.getMethod();
             return mapArgs(method, joinPoint.getArgs(), maxDepth);
         } catch (JsonProcessingException e) {
-            return "{\"error\":\"Failed to serialize snapshot: " + e.getMessage() + "\"}";
+            return "{\"error\": \"Failed to serialize snapshot: " + e.getMessage() + "\"}";
         } catch (Exception e) {
-            return "{\"error\":\"Unexpected error: " + e.getMessage() + "\"}";
+            return "{\"error\": \"Unexpected error: " + e.getMessage() + "\"}";
         }
     }
 
     /**
-     * Serializa un objeto (response, exception, etc.) a JSON con un prefijo sem&aacute;ntico.
+     * Serializa un objeto (response, exception, etc.) a JSON con un prefijo semántico.
      * <p>
-     * Si el objeto es una instancia de {@link Throwable} el prefijo ser&aacute;
-     * {@code "exception"}; en cualquier otro caso ser&aacute; {@code "response"}.
+     * Si el objeto es una instancia de {@link Throwable} el prefijo será
+     * {@code "exception"}; en cualquier otro caso será {@code "response"}.
      * <p>
      * El JSON generado puede consultarse directamente con {@link
      * mx.bastekor.flowweaver.resolver.ExpressionResolver}:
@@ -61,8 +61,8 @@ public final class SafeSnapshotMapper {
      * </pre>
      *
      * @param value    objeto a serializar
-     * @param maxDepth profundidad m&aacute;xima de anidamiento
-     * @return JSON con un nodo ra&iacute;z {@code "response"} o {@code "exception"}
+     * @param maxDepth profundidad máxima de anidamiento
+     * @return JSON con un nodo raíz {@code "response"} o {@code "exception"}
      */
     public static String mapObject(Object value, int maxDepth) {
         try {
@@ -70,8 +70,33 @@ public final class SafeSnapshotMapper {
             Map<String, Object> root = new LinkedHashMap<>();
             root.put(prefix, rawValue(value, 0, maxDepth));
             return MAPPER.writeValueAsString(root);
+        } catch (JsonProcessingException e) {
+            return "{\"error\": \"Failed to serialize object: " + e.getMessage() + "\"}";
         } catch (Exception e) {
-            return "{\"error\":\"Failed to serialize object: " + e.getMessage() + "\"}";
+            return "{\"error\": \"Unexpected error: " + e.getMessage() + "\"}";
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void flattenPaths(String prefix, Object node, Map<String, String> out) {
+        if (node instanceof Map) {
+            for (var e : ((Map<String, Object>) node).entrySet()) {
+                String path = prefix + "." + e.getKey();
+                String shortChain = path.substring(path.indexOf('.') + 1);
+                Object val = e.getValue();
+                if (val instanceof Map) {
+                    out.putIfAbsent(e.getKey(), path);
+                    out.putIfAbsent(shortChain, path);
+                    out.putIfAbsent(path, path);
+                    flattenPaths(path, val, out);
+                } else if (val instanceof List) {
+                    out.putIfAbsent(path, path);
+                } else {
+                    out.putIfAbsent(e.getKey(), path);
+                    out.putIfAbsent(shortChain, path);
+                    out.putIfAbsent(path, path);
+                }
+            }
         }
     }
 
@@ -94,6 +119,7 @@ public final class SafeSnapshotMapper {
         root.put("_annotations", annotationsList);
 
         List<Object> argsList = new ArrayList<>();
+        Map<String, String> fields = new LinkedHashMap<>();
         for (int i = 0; i < parameters.length; i++) {
             Parameter parameter = parameters[i];
             Object safeResult = safeValue(args[i], 0, maxDepth);
@@ -114,9 +140,16 @@ public final class SafeSnapshotMapper {
             }
 
             argsList.add(argMap);
-            root.put("args" + i, rawValue(args[i], 0, maxDepth));
+            String prefix = "args" + i;
+            root.put(prefix, rawValue(args[i], 0, maxDepth));
+            fields.putIfAbsent(parameter.getName(), prefix);
+            Object raw = root.get(prefix);
+            if (raw instanceof Map) {
+                flattenPaths(prefix, raw, fields);
+            }
         }
         root.put("_args", argsList);
+        root.put("_fields", fields);
         return MAPPER.writeValueAsString(root);
     }
 }

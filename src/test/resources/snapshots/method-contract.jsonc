@@ -96,5 +96,9 @@
                 "amount": "depth_limit_reached 100"
             }
         }
-    ]
+    ],
+    "_fields": {
+        "code": "args0",
+        "persons": "args1"
+    }
 }

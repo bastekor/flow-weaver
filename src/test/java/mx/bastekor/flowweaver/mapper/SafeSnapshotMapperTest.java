@@ -95,6 +95,77 @@ class SafeSnapshotMapperTest {
     }
 
     // ===================================================================
+    //  _fields — &iacute;ndice inverso de propiedades
+    // ===================================================================
+
+    @Test
+    void fields_containsParamNamesForAllArgs() throws Exception {
+        Method method = TestService.class.getMethod("greet", String.class, String.class, int.class);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getSignature()).thenReturn(methodSignature);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{"a", "b", 1});
+
+        String json = SafeSnapshotMapper.mapArgs(joinPoint, 5);
+        assertEquals("args0", ExpressionResolver.resolve(json, "_fields.saludo"));
+        assertEquals("args1", ExpressionResolver.resolve(json, "_fields.nombre"));
+        assertEquals("args2", ExpressionResolver.resolve(json, "_fields.cantidad"));
+    }
+
+    @Test
+    void fields_containsLeafPathsFromPOJO() throws Exception {
+        Method method = TestService.class.getMethod("process", String.class, Person.class);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getSignature()).thenReturn(methodSignature);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{"ABC", new Person("Juan", "juan@test.com", new Money("MXN", java.math.BigDecimal.valueOf(200)))});
+
+        String json = SafeSnapshotMapper.mapArgs(joinPoint, 5);
+        // parámetros por nombre
+        assertEquals("args0", ExpressionResolver.resolve(json, "_fields.code"));
+        assertEquals("args1", ExpressionResolver.resolve(json, "_fields.person"));
+        // campos hoja del POJO (short keys)
+        assertEquals("args1.name", ExpressionResolver.resolve(json, "_fields.name"));
+        assertEquals("args1.email", ExpressionResolver.resolve(json, "_fields.email"));
+        // amount apunta al Map Money (no leaf, pero el short key lo registra)
+        assertEquals("args1.amount", ExpressionResolver.resolve(json, "_fields.amount"));
+        // rutas completas: short chain (amount.currency) y field simple (amount), ambos indexados
+        assertEquals("args1.amount.currency", ExpressionResolver.resolve(json, "_fields.currency"));
+        assertEquals("args1.amount.currency", ExpressionResolver.resolve(json, "_fields['amount.currency']"));
+        assertEquals("args1.amount.amount", ExpressionResolver.resolve(json, "_fields['amount.amount']"));
+        // resolver cadena completa: _fields → path → valor real
+        String path = ExpressionResolver.resolve(json, "_fields.name");
+        assertEquals("Juan", ExpressionResolver.resolve(json, path));
+    }
+
+    @Test
+    void fields_withThreeParams_containsAllFields() throws Exception {
+        Method method = TestService.class.getMethod("placeOrder", String.class, Person.class, String.class);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getSignature()).thenReturn(methodSignature);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{
+                "ORD-001",
+                new Person("Alice", "alice@test.com", new Money("USD", java.math.BigDecimal.valueOf(100))),
+                "handle with care"
+        });
+
+        String json = SafeSnapshotMapper.mapArgs(joinPoint, 5);
+        // parámetros por nombre
+        assertEquals("args0", ExpressionResolver.resolve(json, "_fields.orderId"));
+        assertEquals("args1", ExpressionResolver.resolve(json, "_fields.customer"));
+        assertEquals("args2", ExpressionResolver.resolve(json, "_fields.notes"));
+        // campos hoja del POJO en args1
+        assertEquals("args1.name", ExpressionResolver.resolve(json, "_fields.name"));
+        assertEquals("args1.email", ExpressionResolver.resolve(json, "_fields.email"));
+        assertEquals("args1.amount", ExpressionResolver.resolve(json, "_fields.amount"));
+        assertEquals("args1.amount.currency", ExpressionResolver.resolve(json, "_fields['amount.currency']"));
+        assertEquals("args1.amount.currency", ExpressionResolver.resolve(json, "_fields.currency"));
+        // resolver cadena completa: _fields → path → valor real
+        String path = ExpressionResolver.resolve(json, "_fields.email");
+        assertEquals("alice@test.com", ExpressionResolver.resolve(json, path));
+        // args0 y args2 no generan campos hoja (son String)
+        assertTrue(json.contains("\"_fields\""), "JSON debe contener _fields");
+    }
+
+    // ===================================================================
     //  mapArgs — formato argsN construido con rawValue (helper)
     // ===================================================================
 
@@ -202,6 +273,11 @@ class SafeSnapshotMapperTest {
 
         @BusinessLog
         public String process2(String code, List<Person> persons) {
+            return "OK";
+        }
+
+        @BusinessLog
+        public String placeOrder(String orderId, Person customer, String notes) {
             return "OK";
         }
     }
