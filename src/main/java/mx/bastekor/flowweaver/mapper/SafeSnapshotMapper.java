@@ -91,6 +91,10 @@ public final class SafeSnapshotMapper {
                     flattenPaths(path, val, out);
                 } else if (val instanceof List) {
                     out.putIfAbsent(path, path);
+                    List<Object> list = (List<Object>) val;
+                    if (!list.isEmpty() && list.get(0) instanceof Map) {
+                        flattenPaths(prefix + "[0]", list.get(0), out);
+                    }
                 } else {
                     out.putIfAbsent(e.getKey(), path);
                     out.putIfAbsent(shortChain, path);

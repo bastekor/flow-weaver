@@ -99,6 +99,12 @@
     ],
     "_fields": {
         "code": "args0",
-        "persons": "args1"
+        "persons": "args1",
+        "name": "args1[0].name",
+        "email": "args1[0].email",
+        "amount": "args1[0].amount",
+        "currency": "args1[0].amount.currency",
+        "amount.currency": "args1[0].amount.currency",
+        "amount.amount": "args1[0].amount.amount"
     }
 }
