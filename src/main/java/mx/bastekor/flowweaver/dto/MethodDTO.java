@@ -26,6 +26,8 @@ public class MethodDTO {
     private String returnType;
     @JsonProperty("_annotations")
     private List<String> annotations;
-    @JsonProperty("args")
+    @JsonProperty("_args")
     private List<ArgumentDTO> arguments;
+    @JsonProperty("args")
+    private List<String> args;
 }

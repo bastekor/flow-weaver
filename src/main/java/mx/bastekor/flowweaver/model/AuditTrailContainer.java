@@ -29,15 +29,15 @@ public class AuditTrailContainer {
     private String parentCode;
 
     @Setter @Getter
+    private AuditTrail auditTrail;
+    @Setter @Getter
     private String entrySignature; // firma de entrada del metodo
     @Setter @Getter
     private String exitSignature; // firma de salida del metodo
     @Setter @Getter
-    private AuditTrail auditTrail;
-    @Setter @Getter
     private StatusEnum status;
     @Setter @Getter
-    private Object response;
+    private String response;
 
     public AuditTrailContainer() {
         this.instant = now();

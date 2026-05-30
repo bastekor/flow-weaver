@@ -32,7 +32,7 @@ public class RequestDTO extends AppInfoDTO {
     @JsonProperty("result")
     private String result;
     @JsonProperty("mode")
-    private String mode;
+    private String mode; // Revisar si es necesario saberlo en salida final
     @JsonProperty("data")
     private DataDTO data;
 }

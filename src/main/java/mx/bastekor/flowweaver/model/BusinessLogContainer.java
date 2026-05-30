@@ -33,7 +33,7 @@ public class BusinessLogContainer {
     @Setter @Getter
     private StatusEnum status;
     @Setter @Getter
-    private Object response;
+    private String response;
     private final List<AuditTrailContainer> auditTrails;
 
     public BusinessLogContainer(String correlationId, String group, String code) {

@@ -30,6 +30,7 @@ import static mx.bastekor.flowweaver.context.FlowWeaverContext.printRecursive;
 import static mx.bastekor.flowweaver.enums.StatusEnum.SOURCE_FAILURE;
 import static mx.bastekor.flowweaver.enums.StatusEnum.SOURCE_SUCCESS;
 import static mx.bastekor.flowweaver.mapper.SafeSnapshotMapper.mapArgs;
+import static mx.bastekor.flowweaver.mapper.SafeSnapshotMapper.mapObject;
 import static mx.bastekor.flowweaver.util.CodeGenerator.generate;
 import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -71,8 +72,8 @@ public class FlowWeaverAspect {
             throw throwable;
         } finally {
             blc.setStatus(status);
-            blc.setResponse(response);
             blc.setExitSignature(mapArgs(joinPoint, maxDepth));
+            blc.setResponse(mapObject(response, maxDepth));
             blc.setBusinessLog(businessLog);
             this.sendToPublish(blc);
             printRecursive(bool);
@@ -120,13 +121,12 @@ public class FlowWeaverAspect {
         } finally {
             this.fillAuditTrailContainer(blcGroup, blcCode, blcCorrelationId, code, auditTrail, outAuditTrailContainer);
             outAuditTrailContainer.setExitSignature(mapArgs(joinPoint, maxDepth));
-            outAuditTrailContainer.setResponse(response);
+            outAuditTrailContainer.setResponse(mapObject(response, maxDepth));
             outAuditTrailContainer.setStatus(status);
             addAuditTrailContainer(false, outAuditTrailContainer, blc);
             this.sendToPublish(outAuditTrailContainer);
 
-//            // Único para "BusinessLogContainer" por default, ya que elimina al BusinessLogContainer creado
-//            // temporalmente para este "huerfano".
+            // Eliminamos el "BusinessLogContainer" creado únicamente para estos "AuditTrailContainer"s.
             if (isBlank(auditTrail.parentCode())) {
                 clearBusinessLogContainer(blc.getCode());
             }

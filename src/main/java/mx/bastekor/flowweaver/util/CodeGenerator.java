@@ -10,9 +10,9 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class CodeGenerator {
 
-    private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final String NUMERIC = "0123456789";
     private static final String ALPHA_UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String ALPHANUMERIC = ALPHA_UPPER + NUMERIC;
     private static final String HEX = "0123456789ABCDEF";
     private static final Random RANDOM = new SecureRandom();
 

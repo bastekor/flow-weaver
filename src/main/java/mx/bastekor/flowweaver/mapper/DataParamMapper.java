@@ -34,15 +34,7 @@ public final class DataParamMapper {
      * @param dataParam {@link DataParam}.
      * @return {@link DataParamDTO}.
      */
-    public static DataParamDTO createDataParamDTO(DataParam dataParam) {
-        if (dataParam == null) {
-            return null;
-        }
-
-        DataParamDTO dataParamDTO = new DataParamDTO();
-        dataParamDTO.setKey(dataParam.key());
-        dataParamDTO.setValue(dataParam.value());
-        dataParamDTO.setDefaultValue(dataParam.defaultValue());
-        return dataParamDTO;
+    private static DataParamDTO createDataParamDTO(DataParam dataParam) {
+        return new DataParamDTO(dataParam.key(), dataParam.value(), dataParam.defaultValue());
     }
 }

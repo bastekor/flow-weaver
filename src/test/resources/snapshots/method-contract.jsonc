@@ -78,25 +78,6 @@
             ]
         }
     ],
-    "args0": "test",
-    "args1": [
-        {
-            "name": "Juan",
-            "email": "juan@email.com",
-            "amount": {
-                "currency": "depth_limit_reached USD",
-                "amount": "depth_limit_reached 100"
-            }
-        },
-        {
-            "name": "Juan",
-            "email": "juan@email.com",
-            "amount": {
-                "currency": "depth_limit_reached USD",
-                "amount": "depth_limit_reached 100"
-            }
-        }
-    ],
     "_fields": {
         "args0": "test",
         "code": "test",

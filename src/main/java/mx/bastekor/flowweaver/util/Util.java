@@ -30,4 +30,23 @@ public final class Util {
 
         return format;
     }
+
+    /**
+     * Esté método normaliza la entrada de datos transformandolo a modo de nuestro uso. ejemplos en los pasos
+     * </br>
+     * 1. args[0] → args0, arg_2 → arg2, args-3 → args3</br>
+     * 2. arg0 → args0, ARGS1 → args1</br>
+     * 3. Arg0 → args0</br>
+     * @param expression Expresión de entrada a resolver
+     * @return Valor normalizado
+     */
+    public static String normalizeInput(final String expression) {
+        int dotIdx = expression.indexOf('.');
+        String first = (dotIdx >= 0) ? expression.substring(0, dotIdx) : expression;
+        String rest = (dotIdx >= 0) ? expression.substring(dotIdx) : "";
+
+        return first.replaceAll("[\\[\\]_\\-]", "")
+                .replaceFirst("(?i)^args?", "args")
+                + rest;
+    }
 }

@@ -119,8 +119,7 @@ public final class SafeSnapshotMapper {
             argsList.add(argMap);
             String prefix = "args" + i;
             Object raw = rawValue(args[i], 0, maxDepth);
-            root.put(prefix, raw);
-            fields.put("args" + i, raw);
+            fields.put(prefix, raw);
             fields.put(parameter.getName(), raw);
         }
         root.put("_args", argsList);

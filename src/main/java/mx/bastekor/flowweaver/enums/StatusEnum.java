@@ -34,4 +34,6 @@ public enum StatusEnum {
     ERROR,
 
     INTERNAL_SUCCESS, INTERNAL_FAULT, INTERNAL_ERROR
+
+    // Revisar estos enums de errores de lib y de quien implemente
 }

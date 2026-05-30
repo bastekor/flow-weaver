@@ -29,8 +29,8 @@ public final class SafeSerializer {
      *
      * @param value    objeto a serializar
      * @param depth    profundidad actual (quien llama inicia en 0)
-     * @param maxDepth profundidad m&aacute;xima permitida
-     * @return representaci&oacute;n cruda del objeto, null si value es null
+     * @param maxDepth profundidad máxima permitida
+     * @return representación cruda del objeto, null si value es null
      */
     public static Object rawValue(Object value, int depth, int maxDepth) {
         if (value == null) {
@@ -81,7 +81,7 @@ public final class SafeSerializer {
             if (value instanceof Throwable t) {
                 fieldsMap.put("message", t.getMessage());
                 fieldsMap.put("cause", rawValue(t.getCause(), depth + 1, maxDepth));
-//                fieldsMap.put("stackTrace", rawValue(t.getStackTrace(), depth + 1, maxDepth)); // Pendiente atenci&oacute;n
+//                fieldsMap.put("stackTrace", rawValue(t.getStackTrace(), depth + 1, maxDepth)); // Pendiente atención
             }
             for (Class<?> clazz = value.getClass(); clazz != null && clazz != Object.class; clazz = clazz.getSuperclass()) {
                 for (Field f : clazz.getDeclaredFields()) {

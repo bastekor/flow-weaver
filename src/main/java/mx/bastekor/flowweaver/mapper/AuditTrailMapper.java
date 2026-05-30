@@ -11,15 +11,9 @@ import static org.apache.commons.lang3.StringUtils.trim;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class AuditTrailMapper {
 
-    private static final String AUDIT_TRAIL_PREFIX = "AT#";
-
     public static AuditTrailDTO createAuditTrailDTO(AuditTrailContainer auditTrailContainer) {
 
-        if (auditTrailContainer == null) {
-            return null;
-        }
-
-        if (auditTrailContainer.getAuditTrail() == null) {
+        if (auditTrailContainer == null || auditTrailContainer.getAuditTrail() == null) {
             return null;
         }
 

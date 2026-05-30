@@ -542,7 +542,7 @@ class ExpressionResolverTest {
     @CsvSource({
             "_args[0]._value, test",
             "_args.0._toString, test",
-            "args0,            test",
+            "_fields.args0,   test",
     })
     void integrationViaMC(String expr, String expected) {
         asserts(MC, expr, expected);
@@ -551,27 +551,27 @@ class ExpressionResolverTest {
     @Test
     void integrationMC_bothStylesMatch() {
         String legacy = ExpressionResolver.resolve(MC, "_args[0]._value");
-        String raw = ExpressionResolver.resolve(MC, "args0");
+        String raw = ExpressionResolver.resolve(MC, "_fields.args0");
         assertEquals(legacy, raw, "args0 y _args[0]._value deben coincidir en MC");
     }
 
     @Test
     void integrationMC_rawObjectField() {
         // args1[0].name = "Juan"
-        assertEquals("Juan", ExpressionResolver.resolve(MC, "args1[0].name"));
-        assertEquals("Juan", ExpressionResolver.resolve(MC, "args1[1].name"));
+        assertEquals("Juan", ExpressionResolver.resolve(MC, "_fields.args1[0].name"));
+        assertEquals("Juan", ExpressionResolver.resolve(MC, "_fields.args1[1].name"));
     }
 
     @Test
     void integrationMC_rawDepthLimit() {
         // args1[0].amount.currency = "depth_limit_reached USD"
-        String val = ExpressionResolver.resolve(MC, "args1[0].amount.currency");
+        String val = ExpressionResolver.resolve(MC, "_fields.args1[0].amount.currency");
         assertTrue(val != null && val.startsWith("depth_limit_reached "));
     }
 
     @Test
     void integrationMC_rawListIndex() {
-        assertEquals("Juan", ExpressionResolver.resolve(MC, "args1[-1].name"));
+        assertEquals("Juan", ExpressionResolver.resolve(MC, "_fields.args1[-1].name"));
     }
 
     // ===================================================================

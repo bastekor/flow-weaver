@@ -28,10 +28,7 @@ import static org.mockito.Mockito.when;
 class SafeSnapshotMapperTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    // ===================================================================
-    //  mapArgs — API p&uacute;blica (ProceedingJoinPoint)
-    // ===================================================================
+    private static final String ROOT_SCOPE = "_fields";
 
     @Mock
     private ProceedingJoinPoint joinPoint;
@@ -51,15 +48,14 @@ class SafeSnapshotMapperTest {
         assertTrue(json.contains("\"args1\""), "JSON debe contener args1, pero fue: " + json);
         assertTrue(json.contains("\"args2\""), "JSON debe contener args2, pero fue: " + json);
         assertTrue(json.contains("\"_args\""), "JSON debe contener _args legacy, pero fue: " + json);
-        assertEquals("hola", ExpressionResolver.resolve(json, "args0"));
-        assertEquals("mundo", ExpressionResolver.resolve(json, "args1"));
-        assertEquals("42", ExpressionResolver.resolve(json, "args2"));
+        assertEquals("hola", ExpressionResolver.resolve(json, ROOT_SCOPE,"args0"));
+        assertEquals("mundo", ExpressionResolver.resolve(json, ROOT_SCOPE,"args1"));
+        assertEquals("42", ExpressionResolver.resolve(json, ROOT_SCOPE,"args2"));
     }
 
     @Test
     void mapArgs_proceedingJoinPoint_returnsErrorOnException() {
         when(joinPoint.getSignature()).thenThrow(new RuntimeException("mock error"));
-
         String json = SafeSnapshotMapper.mapArgs(joinPoint, 5);
         assertTrue(json.startsWith("{"), "JSON debe ser un objeto, pero fue: " + json);
     }
@@ -72,9 +68,10 @@ class SafeSnapshotMapperTest {
         when(joinPoint.getArgs()).thenReturn(new Object[]{"ABC", new Person("Juan", "juan@test.com", new Money("MXN", java.math.BigDecimal.valueOf(200)))});
 
         String json = SafeSnapshotMapper.mapArgs(joinPoint, 5);
-        assertEquals("ABC", ExpressionResolver.resolve(json, "args0"));
-        assertEquals("Juan", ExpressionResolver.resolve(json, "args1.name"));
-        assertEquals("juan@test.com", ExpressionResolver.resolve(json, "args1.email"));
+        System.out.println(json);
+        assertEquals("ABC", ExpressionResolver.resolve(json, ROOT_SCOPE, "args0"));
+        assertEquals("Juan", ExpressionResolver.resolve(json, ROOT_SCOPE, "args1.name"));
+        assertEquals("juan@test.com", ExpressionResolver.resolve(json, ROOT_SCOPE, "args1.email"));
     }
 
     @Test
@@ -88,14 +85,14 @@ class SafeSnapshotMapperTest {
         )});
 
         String json = SafeSnapshotMapper.mapArgs(joinPoint, 5);
-        assertEquals("XYZ", ExpressionResolver.resolve(json, "args0"));
-        assertEquals("Alice", ExpressionResolver.resolve(json, "args1[0].name"));
-        assertEquals("bob@test.com", ExpressionResolver.resolve(json, "args1[1].email"));
-        assertEquals("EUR", ExpressionResolver.resolve(json, "args1[1].amount.currency"));
+        assertEquals("XYZ", ExpressionResolver.resolve(json, ROOT_SCOPE, "args0"));
+        assertEquals("Alice", ExpressionResolver.resolve(json, ROOT_SCOPE, "args1[0].name"));
+        assertEquals("bob@test.com", ExpressionResolver.resolve(json, ROOT_SCOPE, "args1[1].email"));
+        assertEquals("EUR", ExpressionResolver.resolve(json, ROOT_SCOPE, "args1[1].amount.currency"));
     }
 
     // ===================================================================
-    //  _fields — &iacute;ndice inverso de propiedades
+    //  _fields — índice inverso de propiedades
     // ===================================================================
 
     @Test
@@ -186,13 +183,14 @@ class SafeSnapshotMapperTest {
     }
 
     // ===================================================================
-    //  mapObject — serializaci&oacute;n de response / exception
+    //  mapObject — serialización de response / exception
     // ===================================================================
 
     @Test
     void mapObject_response_resolvesField() {
         Person p = new Person("Alice", "alice@mail.com", new Money("MXN", java.math.BigDecimal.valueOf(500)));
         String json = SafeSnapshotMapper.mapObject(p, 5);
+        System.out.println(json);
         assertTrue(json.contains("\"response\""), "JSON debe contener nodo response");
         assertEquals("Alice", ExpressionResolver.resolve(json, "response.name"));
         assertEquals("alice@mail.com", ExpressionResolver.resolve(json, "response.email"));
