@@ -12,6 +12,8 @@ import mx.bastekor.flowweaver.mapper.RequestDTOMapper;
 import mx.bastekor.flowweaver.mapper.SafeSnapshotMapper;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.model.SafeSerializer;
+
+import static mx.bastekor.flowweaver.factory.ContainerFactory.createBusinessLogContainer;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,7 +97,7 @@ class FlowWeaverAspectServiceTest {
         Person person = new Person("Juan", "juan@test.com", new Money("MXN", java.math.BigDecimal.valueOf(200)));
         String request = SafeSnapshotMapper.mapArgs(joinPoint, 5);
         String response = SafeSnapshotMapper.mapObject(person, 3);
-        BusinessLogContainer businessLogContainer = new BusinessLogContainer(uuid, "GROUP", "CODE");
+        BusinessLogContainer businessLogContainer = createBusinessLogContainer(uuid, "GROUP", "CODE");
         businessLogContainer.setBusinessLog(businessLog);
         businessLogContainer.setStatus(StatusEnum.SOURCE_SUCCESS);
         businessLogContainer.setExitSignature(request);

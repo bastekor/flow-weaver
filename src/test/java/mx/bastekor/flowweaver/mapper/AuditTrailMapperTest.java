@@ -6,6 +6,8 @@ import mx.bastekor.flowweaver.dto.AuditTrailDTO;
 import mx.bastekor.flowweaver.enums.Mode;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import org.junit.jupiter.api.Test;
+
+import static mx.bastekor.flowweaver.factory.ContainerFactory.createAuditTrailContainer;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -49,10 +51,7 @@ class AuditTrailMapperTest {
         when(auditTrail.defaultException()).thenReturn("defaultEx");
         when(auditTrail.mode()).thenReturn(Mode.MERGED);
 
-        AuditTrailContainer container = new AuditTrailContainer();
-        container.setGroup("test-group");
-        container.setParentCode("BL-001");
-        container.setCode("AT-001");
+        AuditTrailContainer container = createAuditTrailContainer("test-group", "BL-001", "AT-001");
         container.setAuditTrail(auditTrail);
 
         AuditTrailDTO result = AuditTrailMapper.createAuditTrailDTO(container);
@@ -79,10 +78,7 @@ class AuditTrailMapperTest {
         when(auditTrail.defaultException()).thenReturn("  padded default ex  ");
         when(auditTrail.mode()).thenReturn(Mode.STATIC);
 
-        AuditTrailContainer container = new AuditTrailContainer();
-        container.setGroup("g");
-        container.setParentCode("pc");
-        container.setCode("c");
+        AuditTrailContainer container = createAuditTrailContainer("g", "pc", "c");
         container.setAuditTrail(auditTrail);
 
         AuditTrailDTO result = AuditTrailMapper.createAuditTrailDTO(container);
@@ -111,10 +107,7 @@ class AuditTrailMapperTest {
         when(auditTrail.defaultException()).thenReturn("de");
         when(auditTrail.mode()).thenReturn(Mode.DYNAMIC);
 
-        AuditTrailContainer container = new AuditTrailContainer();
-        container.setGroup("g");
-        container.setParentCode("pc");
-        container.setCode("c");
+        AuditTrailContainer container = createAuditTrailContainer("g", "pc", "c");
         container.setAuditTrail(auditTrail);
 
         AuditTrailDTO result = AuditTrailMapper.createAuditTrailDTO(container);
@@ -142,10 +135,7 @@ class AuditTrailMapperTest {
         when(auditTrail.defaultException()).thenReturn("de");
         when(auditTrail.mode()).thenReturn(Mode.DYNAMIC);
 
-        AuditTrailContainer container = new AuditTrailContainer();
-        container.setGroup("g");
-        container.setParentCode("pc");
-        container.setCode("c");
+        AuditTrailContainer container = createAuditTrailContainer("g", "pc", "c");
         container.setAuditTrail(auditTrail);
 
         AuditTrailDTO result = AuditTrailMapper.createAuditTrailDTO(container);
@@ -173,10 +163,7 @@ class AuditTrailMapperTest {
         when(auditTrail.defaultException()).thenReturn("de");
         when(auditTrail.mode()).thenReturn(Mode.DYNAMIC);
 
-        AuditTrailContainer container = new AuditTrailContainer();
-        container.setGroup("g");
-        container.setParentCode("pc");
-        container.setCode("c");
+        AuditTrailContainer container = createAuditTrailContainer("g", "pc", "c");
         container.setAuditTrail(auditTrail);
 
         AuditTrailDTO result = AuditTrailMapper.createAuditTrailDTO(container);

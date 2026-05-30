@@ -4,7 +4,6 @@ import mx.bastekor.flowweaver.config.FlowWeaverRootConfig;
 import mx.bastekor.flowweaver.dto.AuditTrailDTO;
 import mx.bastekor.flowweaver.dto.BusinessLogDTO;
 import mx.bastekor.flowweaver.dto.RequestDTO;
-import mx.bastekor.flowweaver.enums.Mode;
 import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
