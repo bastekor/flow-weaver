@@ -4,10 +4,10 @@ import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.dto.AuditTrailDTO;
 import mx.bastekor.flowweaver.enums.Mode;
+import mx.bastekor.flowweaver.factory.TestFactory;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static mx.bastekor.flowweaver.factory.ContainerFactory.createAuditTrailContainer;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -30,6 +30,13 @@ class AuditTrailMapperTest {
     @Mock
     private DataParam dataParamInOut;
 
+    private TestFactory tf;
+
+    @BeforeEach
+    void setUp() {
+        tf = TestFactory.create(null, auditTrail);
+    }
+
     @Test
     void nullContainer_returnsNull() {
         assertNull(AuditTrailMapper.createAuditTrailDTO(null));
@@ -51,8 +58,11 @@ class AuditTrailMapperTest {
         when(auditTrail.defaultException()).thenReturn("defaultEx");
         when(auditTrail.mode()).thenReturn(Mode.MERGED);
 
-        AuditTrailContainer container = createAuditTrailContainer("test-group", "BL-001", "AT-001");
-        container.setAuditTrail(auditTrail);
+        AuditTrailContainer container = tf.anAuditTrailContainer(c -> {
+            c.setGroup("test-group");
+            c.setParentCode("BL-001");
+            c.setCode("AT-001");
+        });
 
         AuditTrailDTO result = AuditTrailMapper.createAuditTrailDTO(container);
 
@@ -78,8 +88,7 @@ class AuditTrailMapperTest {
         when(auditTrail.defaultException()).thenReturn("  padded default ex  ");
         when(auditTrail.mode()).thenReturn(Mode.STATIC);
 
-        AuditTrailContainer container = createAuditTrailContainer("g", "pc", "c");
-        container.setAuditTrail(auditTrail);
+        AuditTrailContainer container = tf.anAuditTrailContainer();
 
         AuditTrailDTO result = AuditTrailMapper.createAuditTrailDTO(container);
 
@@ -107,8 +116,7 @@ class AuditTrailMapperTest {
         when(auditTrail.defaultException()).thenReturn("de");
         when(auditTrail.mode()).thenReturn(Mode.DYNAMIC);
 
-        AuditTrailContainer container = createAuditTrailContainer("g", "pc", "c");
-        container.setAuditTrail(auditTrail);
+        AuditTrailContainer container = tf.anAuditTrailContainer();
 
         AuditTrailDTO result = AuditTrailMapper.createAuditTrailDTO(container);
 
@@ -135,8 +143,7 @@ class AuditTrailMapperTest {
         when(auditTrail.defaultException()).thenReturn("de");
         when(auditTrail.mode()).thenReturn(Mode.DYNAMIC);
 
-        AuditTrailContainer container = createAuditTrailContainer("g", "pc", "c");
-        container.setAuditTrail(auditTrail);
+        AuditTrailContainer container = tf.anAuditTrailContainer();
 
         AuditTrailDTO result = AuditTrailMapper.createAuditTrailDTO(container);
 
@@ -163,8 +170,7 @@ class AuditTrailMapperTest {
         when(auditTrail.defaultException()).thenReturn("de");
         when(auditTrail.mode()).thenReturn(Mode.DYNAMIC);
 
-        AuditTrailContainer container = createAuditTrailContainer("g", "pc", "c");
-        container.setAuditTrail(auditTrail);
+        AuditTrailContainer container = tf.anAuditTrailContainer();
 
         AuditTrailDTO result = AuditTrailMapper.createAuditTrailDTO(container);
 

@@ -4,10 +4,10 @@ import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.dto.BusinessLogDTO;
 import mx.bastekor.flowweaver.enums.Mode;
+import mx.bastekor.flowweaver.factory.TestFactory;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static mx.bastekor.flowweaver.factory.ContainerFactory.createBusinessLogContainer;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,6 +24,13 @@ class BusinessLogMapperTest {
     @Mock
     private DataParam dataParam;
 
+    private TestFactory tf;
+
+    @BeforeEach
+    void setUp() {
+        tf = TestFactory.create(businessLog, null);
+    }
+
     @Test
     void nullContainer_returnsNull() {
         assertNull(BusinessLogMapper.createBusinessLogDTO(null));
@@ -31,8 +38,7 @@ class BusinessLogMapperTest {
 
     @Test
     void nullBusinessLog_returnsNull() {
-        BusinessLogContainer container = createBusinessLogContainer("corr", "group", "code");
-        assertNull(BusinessLogMapper.createBusinessLogDTO(container));
+        assertNull(BusinessLogMapper.createBusinessLogDTO(new BusinessLogContainer("corr", "group", "code")));
     }
 
     @Test
@@ -45,8 +51,7 @@ class BusinessLogMapperTest {
         when(businessLog.defaultException()).thenReturn("defaultEx");
         when(businessLog.mode()).thenReturn(Mode.MERGED);
 
-        BusinessLogContainer container = createBusinessLogContainer("corr-1", "test-group", "BL-001");
-        container.setBusinessLog(businessLog);
+        BusinessLogContainer container = tf.aBusinessLogContainer("corr-1", "test-group", "BL-001");
 
         BusinessLogDTO result = BusinessLogMapper.createBusinessLogDTO(container);
 
@@ -71,8 +76,7 @@ class BusinessLogMapperTest {
         when(businessLog.defaultException()).thenReturn("  padded default ex  ");
         when(businessLog.mode()).thenReturn(Mode.STATIC);
 
-        BusinessLogContainer container = createBusinessLogContainer("c", "g", "cd");
-        container.setBusinessLog(businessLog);
+        BusinessLogContainer container = tf.aBusinessLogContainer();
 
         BusinessLogDTO result = BusinessLogMapper.createBusinessLogDTO(container);
 
@@ -98,8 +102,7 @@ class BusinessLogMapperTest {
         when(businessLog.defaultException()).thenReturn("de");
         when(businessLog.mode()).thenReturn(Mode.DYNAMIC);
 
-        BusinessLogContainer container = createBusinessLogContainer("c", "g", "cd");
-        container.setBusinessLog(businessLog);
+        BusinessLogContainer container = tf.aBusinessLogContainer();
 
         BusinessLogDTO result = BusinessLogMapper.createBusinessLogDTO(container);
 
@@ -121,8 +124,7 @@ class BusinessLogMapperTest {
         when(businessLog.defaultException()).thenReturn("de");
         when(businessLog.mode()).thenReturn(Mode.STATIC);
 
-        BusinessLogContainer container = createBusinessLogContainer("c", "g", "cd");
-        container.setBusinessLog(businessLog);
+        BusinessLogContainer container = tf.aBusinessLogContainer();
 
         BusinessLogDTO result = BusinessLogMapper.createBusinessLogDTO(container);
 
