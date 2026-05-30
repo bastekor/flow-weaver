@@ -80,15 +80,17 @@ class FlowWeaverAspectServiceTest {
 
         String uuid = UUID.randomUUID().toString();
         when(requestDTOMapper.build(any(BusinessLogContainer.class), any(Environment.class)))
-                .thenReturn(RequestDTO.builder()
-                        .id(uuid)
-                        .group("GROUP")
-                        .code("MX-002")
-                        .description("Pago con tarjeta de debito")
-                        .status(StatusEnum.SOURCE_SUCCESS.name())
-                        .result("en MXN")
-                        .mode("STATIC")
-                        .build());
+                .thenAnswer(invocation -> {
+                    RequestDTO dto = new RequestDTO();
+                    dto.setId(uuid);
+                    dto.setGroup("GROUP");
+                    dto.setCode("MX-002");
+                    dto.setDescription("Pago con tarjeta de debito");
+                    dto.setStatus(StatusEnum.SOURCE_SUCCESS.name());
+                    dto.setResult("en MXN");
+                    dto.setMode("STATIC");
+                    return dto;
+                });
 
         Person person = new Person("Juan", "juan@test.com", new Money("MXN", java.math.BigDecimal.valueOf(200)));
         String request = SafeSnapshotMapper.mapArgs(joinPoint, 5);

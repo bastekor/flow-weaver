@@ -55,8 +55,10 @@ class UtilMapperTest {
     // ============================================================
 
     @Test
-    void mergeDataParamDTOArrays_bothNull_returnsNull() {
-        assertNull(mapper.mergeDataParamDTOArrays(null, null));
+    void mergeDataParamDTOArrays_bothNull_returnsEmptyArray() {
+        DataParamDTO[] result = mapper.mergeDataParamDTOArrays(null, null);
+        assertNotNull(result);
+        assertEquals(0, result.length);
     }
 
     @Test
@@ -146,15 +148,19 @@ class UtilMapperTest {
     }
 
     @Test
-    void mergeDataParamDTOArrays_blankKeyDiscarded_returnsNull() {
+    void mergeDataParamDTOArrays_blankKeyDiscarded_returnsEmptyArray() {
         DataParamDTO[] priority = {new DataParamDTO(" ", "v1", "d1")};
-        assertNull(mapper.mergeDataParamDTOArrays(priority, new DataParamDTO[0]));
+        DataParamDTO[] result = mapper.mergeDataParamDTOArrays(priority, new DataParamDTO[0]);
+        assertNotNull(result);
+        assertEquals(0, result.length);
     }
 
     @Test
-    void mergeDataParamDTOArrays_emptyKeyDiscarded_returnsNull() {
+    void mergeDataParamDTOArrays_emptyKeyDiscarded_returnsEmptyArray() {
         DataParamDTO[] priority = {new DataParamDTO("", "v1", "d1")};
-        assertNull(mapper.mergeDataParamDTOArrays(priority, new DataParamDTO[0]));
+        DataParamDTO[] result = mapper.mergeDataParamDTOArrays(priority, new DataParamDTO[0]);
+        assertNotNull(result);
+        assertEquals(0, result.length);
     }
 
     @Test

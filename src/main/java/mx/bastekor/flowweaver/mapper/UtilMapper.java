@@ -54,7 +54,7 @@ public interface UtilMapper {
             }
         }
 
-        return result.isEmpty() ? null : result.toArray(new DataParamDTO[0]);
+        return result.toArray(new DataParamDTO[0]);
     }
 
     @Mapping(target = "dataIn", expression = "java(mergeDataParamDTOArrays(priority.getDataIn(), fallback.getDataIn()))")
