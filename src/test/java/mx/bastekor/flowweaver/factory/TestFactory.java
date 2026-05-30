@@ -1,5 +1,7 @@
 package mx.bastekor.flowweaver.factory;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.dto.AuditTrailDTO;
@@ -15,47 +17,32 @@ import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TestFactory {
-
-    private final BusinessLog businessLog;
-    private final AuditTrail auditTrail;
-
-    private TestFactory(BusinessLog businessLog, AuditTrail auditTrail) {
-        this.businessLog = businessLog;
-        this.auditTrail = auditTrail;
-    }
-
-    public static TestFactory create(BusinessLog businessLog, AuditTrail auditTrail) {
-        return new TestFactory(businessLog, auditTrail);
-    }
-
-    public static TestFactory dtoOnly() {
-        return new TestFactory(null, null);
-    }
 
     // ========== DataParamDTO ==========
 
-    @SuppressWarnings("unchecked")
-    public DataParamDTO aDataParamDTO(Consumer<DataParamDTO>... customizers) {
-        DataParamDTO dto = new DataParamDTO("k", "v", "d");
-        for (var c : customizers) c.accept(dto);
-        return dto;
+    public static DataParamDTO aDataParamDTO() {
+        return new DataParamDTO("k", "v", "d");
     }
 
-    public DataParamDTO aDataParamDTO(String key, String value, String defaultValue) {
+    public static DataParamDTO aDataParamDTO(String key, String value, String defaultValue) {
         return new DataParamDTO(key, value, defaultValue);
+    }
+
+    public static DataParamDTO aDataParamDTO(Consumer<DataParamDTO> c) {
+        DataParamDTO dto = aDataParamDTO();
+        c.accept(dto);
+        return dto;
     }
 
     // ========== DataParamsDTO ==========
 
-    @SuppressWarnings("unchecked")
-    public DataParamsDTO aDataParamsDTO(Consumer<DataParamsDTO>... customizers) {
-        DataParamsDTO dto = new DataParamsDTO();
-        for (var c : customizers) c.accept(dto);
-        return dto;
+    public static DataParamsDTO aDataParamsDTO() {
+        return new DataParamsDTO();
     }
 
-    public DataParamsDTO aDataParamsDTO(DataParamDTO[] dataIn, DataParamDTO[] dataOut, DataParamDTO[] dataInOut) {
+    public static DataParamsDTO aDataParamsDTO(DataParamDTO[] dataIn, DataParamDTO[] dataOut, DataParamDTO[] dataInOut) {
         DataParamsDTO dto = new DataParamsDTO();
         dto.setDataIn(dataIn);
         dto.setDataOut(dataOut);
@@ -65,8 +52,7 @@ public class TestFactory {
 
     // ========== BusinessLogDTO ==========
 
-    @SuppressWarnings("unchecked")
-    public BusinessLogDTO aBusinessLogDTO(Consumer<BusinessLogDTO>... customizers) {
+    public static BusinessLogDTO aBusinessLogDTO() {
         BusinessLogDTO dto = new BusinessLogDTO();
         dto.setGroup("G");
         dto.setCode("C");
@@ -77,11 +63,10 @@ public class TestFactory {
         dto.setException("ex");
         dto.setDefaultException("defaultEx");
         dto.setMode(Mode.STATIC);
-        for (var c : customizers) c.accept(dto);
         return dto;
     }
 
-    public BusinessLogDTO aBusinessLogDTO(String group, String code, Mode mode) {
+    public static BusinessLogDTO aBusinessLogDTO(String group, String code, Mode mode) {
         BusinessLogDTO dto = aBusinessLogDTO();
         dto.setGroup(group);
         dto.setCode(code);
@@ -89,10 +74,15 @@ public class TestFactory {
         return dto;
     }
 
+    public static BusinessLogDTO aBusinessLogDTO(Consumer<BusinessLogDTO> c) {
+        BusinessLogDTO dto = aBusinessLogDTO();
+        c.accept(dto);
+        return dto;
+    }
+
     // ========== AuditTrailDTO ==========
 
-    @SuppressWarnings("unchecked")
-    public AuditTrailDTO anAuditTrailDTO(Consumer<AuditTrailDTO>... customizers) {
+    public static AuditTrailDTO anAuditTrailDTO() {
         AuditTrailDTO dto = new AuditTrailDTO();
         dto.setFlowCode("BL");
         dto.setGroup("G");
@@ -104,11 +94,10 @@ public class TestFactory {
         dto.setException("ex");
         dto.setDefaultException("defaultEx");
         dto.setMode(Mode.STATIC);
-        for (var c : customizers) c.accept(dto);
         return dto;
     }
 
-    public AuditTrailDTO anAuditTrailDTO(String flowCode, String group, String code, Mode mode) {
+    public static AuditTrailDTO anAuditTrailDTO(String flowCode, String group, String code, Mode mode) {
         AuditTrailDTO dto = anAuditTrailDTO();
         dto.setFlowCode(flowCode);
         dto.setGroup(group);
@@ -117,10 +106,15 @@ public class TestFactory {
         return dto;
     }
 
+    public static AuditTrailDTO anAuditTrailDTO(Consumer<AuditTrailDTO> c) {
+        AuditTrailDTO dto = anAuditTrailDTO();
+        c.accept(dto);
+        return dto;
+    }
+
     // ========== RequestDTO ==========
 
-    @SuppressWarnings("unchecked")
-    public RequestDTO aRequestDTO(Consumer<RequestDTO>... customizers) {
+    public static RequestDTO aRequestDTO() {
         RequestDTO dto = new RequestDTO();
         dto.setId(UUID.randomUUID().toString());
         dto.setGroup("G");
@@ -129,38 +123,66 @@ public class TestFactory {
         dto.setStatus(StatusEnum.SOURCE_SUCCESS.name());
         dto.setResult("result");
         dto.setMode("STATIC");
-        for (var c : customizers) c.accept(dto);
+        return dto;
+    }
+
+    public static RequestDTO aRequestDTO(String id, String group, String code) {
+        RequestDTO dto = aRequestDTO();
+        dto.setId(id);
+        dto.setGroup(group);
+        dto.setCode(code);
+        return dto;
+    }
+
+    public static RequestDTO aRequestDTO(Consumer<RequestDTO> c) {
+        RequestDTO dto = aRequestDTO();
+        c.accept(dto);
         return dto;
     }
 
     // ========== BusinessLogContainer ==========
 
-    public BusinessLogContainer aBusinessLogContainer() {
-        return aBusinessLogContainer(UUID.randomUUID().toString(), "GROUP", "CODE");
+    public static BusinessLogContainer aBusinessLogContainer(BusinessLog businessLog) {
+        return aBusinessLogContainer(UUID.randomUUID().toString(), "GROUP", "CODE", businessLog);
     }
 
-    @SuppressWarnings("unchecked")
-    public BusinessLogContainer aBusinessLogContainer(String correlationId, String group, String code,
-                                                       Consumer<BusinessLogContainer>... customizers) {
+    public static BusinessLogContainer aBusinessLogContainer(String correlationId, String group, String code,
+                                                              BusinessLog businessLog) {
         BusinessLogContainer c = new BusinessLogContainer(correlationId, group, code);
         c.setBusinessLog(businessLog);
         c.setStatus(StatusEnum.SOURCE_SUCCESS);
         c.setExitSignature("exit-signature");
         c.setResponse("response");
-        for (var cust : customizers) cust.accept(c);
+        return c;
+    }
+
+    public static BusinessLogContainer aBusinessLogContainer(String correlationId, String group, String code,
+                                                              BusinessLog businessLog, Consumer<BusinessLogContainer> customizer) {
+        BusinessLogContainer c = aBusinessLogContainer(correlationId, group, code, businessLog);
+        customizer.accept(c);
         return c;
     }
 
     // ========== AuditTrailContainer ==========
 
-    @SuppressWarnings("unchecked")
-    public AuditTrailContainer anAuditTrailContainer(Consumer<AuditTrailContainer>... customizers) {
+    public static AuditTrailContainer anAuditTrailContainer(AuditTrail auditTrail) {
+        return anAuditTrailContainer("GROUP", "PARENT", "CODE", auditTrail);
+    }
+
+    public static AuditTrailContainer anAuditTrailContainer(String group, String parentCode, String code,
+                                                             AuditTrail auditTrail) {
         AuditTrailContainer c = new AuditTrailContainer();
-        c.setGroup("GROUP");
-        c.setParentCode("PARENT");
-        c.setCode("CODE");
+        c.setGroup(group);
+        c.setParentCode(parentCode);
+        c.setCode(code);
         c.setAuditTrail(auditTrail);
-        for (var cust : customizers) cust.accept(c);
+        return c;
+    }
+
+    public static AuditTrailContainer anAuditTrailContainer(String group, String parentCode, String code,
+                                                             AuditTrail auditTrail, Consumer<AuditTrailContainer> customizer) {
+        AuditTrailContainer c = anAuditTrailContainer(group, parentCode, code, auditTrail);
+        customizer.accept(c);
         return c;
     }
 }
