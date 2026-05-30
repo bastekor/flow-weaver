@@ -78,11 +78,13 @@ public abstract class RequestDTOMapper {
             case DYNAMIC -> ofNullable(config.getBusinessLogs())
                     .map(bl -> bl.get(container.getCode()))
                     .orElse(null);
-            case MERGED -> utilMapper.mergeBusinessLogDTO(
-                    ofNullable(config.getBusinessLogs())
-                            .map(bl -> bl.get(container.getCode()))
-                            .orElse(null),
-                    BusinessLogMapper.createBusinessLogDTO(container));
+            case MERGED -> {
+                var dynamic = ofNullable(config.getBusinessLogs())
+                        .map(bl -> bl.get(container.getCode()))
+                        .orElse(null);
+                var staticDto = BusinessLogMapper.createBusinessLogDTO(container);
+                yield dynamic == null ? staticDto : utilMapper.mergeBusinessLogDTO(dynamic, staticDto);
+            }
         };
     }
 
@@ -92,11 +94,13 @@ public abstract class RequestDTOMapper {
             case DYNAMIC -> ofNullable(config.getAuditTrails())
                     .map(at -> at.get(container.getCode()))
                     .orElse(null);
-            case MERGED -> utilMapper.mergeAuditTrailDTO(
-                    ofNullable(config.getAuditTrails())
-                            .map(at -> at.get(container.getCode()))
-                            .orElse(null),
-                    AuditTrailMapper.createAuditTrailDTO(container));
+            case MERGED -> {
+                var dynamic = ofNullable(config.getAuditTrails())
+                        .map(at -> at.get(container.getCode()))
+                        .orElse(null);
+                var staticDto = AuditTrailMapper.createAuditTrailDTO(container);
+                yield dynamic == null ? staticDto : utilMapper.mergeAuditTrailDTO(dynamic, staticDto);
+            }
         };
     }
 
