@@ -22,6 +22,7 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
 
     private final Environment environment;
     private final RequestDTOMapper requestDTOMapper;
+    private final IFlowWeaverService flowWeaverService;
 
     @Override
     @Async("flowWeaverExecutor")
@@ -31,23 +32,7 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
         final Instant start = Instant.now();
         try {
             final RequestDTO requestDTO = requestDTOMapper.build(businessLogContainer, environment);
-
-            String frame = getFrame(
-                    requestDTO.getId(),
-                    "NO_PARENT",
-                    requestDTO.getGroup(),
-                    requestDTO.getCode(),
-                    "EXIT/OUT",
-                    requestDTO.getDescription(),
-                    requestDTO.getStatus(),
-                    requestDTO.getResult(),
-                    requestDTO.getAppName(),
-                    requestDTO.getAppVersion(),
-                    requestDTO.getAppDescription(),
-                    requestDTO.getHostName(),
-                    requestDTO.getIpAddress()
-            );
-            log.info("Trama-BusinessLog: {}", frame);
+            flowWeaverService.trace(requestDTO);
         } catch (Exception e) {
             log.error(BUSINESS_ERROR, businessLogContainer.getStatus(), businessLogContainer.getCode(), e.getMessage(), e);
         } finally {
@@ -63,31 +48,11 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
         final Instant start = Instant.now();
         try {
             final RequestDTO requestDTO = requestDTOMapper.build(auditTrailContainer, environment);
-
-            String frame = getFrame(
-                    requestDTO.getId(),
-                    auditTrailContainer.getParentCode(),
-                    requestDTO.getGroup(),
-                    requestDTO.getCode(),
-                    auditTrailContainer.getEntrySignature() != null ? "ENTRY/IN" : "EXIT/OUT",
-                    requestDTO.getDescription(),
-                    requestDTO.getResult(),
-                    requestDTO.getStatus(),
-                    requestDTO.getAppName(),
-                    requestDTO.getAppVersion(),
-                    requestDTO.getAppDescription(),
-                    requestDTO.getHostName(),
-                    requestDTO.getIpAddress()
-            );
-            log.info("Trama-AuditTrail: {}", frame);
+            flowWeaverService.trace(requestDTO);
         } catch (Exception e) {
             log.error(AUDIT_ERROR, auditTrailContainer.getStatus(), auditTrailContainer.getCorrelationId(), e.getMessage(), e);
         } finally {
             final Instant end = Instant.now();
         }
-    }
-
-    private String getFrame(String... args) {
-        return String.join("|", args);
     }
 }

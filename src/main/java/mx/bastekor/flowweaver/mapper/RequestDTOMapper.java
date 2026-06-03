@@ -34,14 +34,11 @@ public abstract class RequestDTOMapper {
     @Mapping(target = "id", source = "dto.correlationId")
     @Mapping(target = "group", source = "dto.group")
     @Mapping(target = "code", source = "dto.code")
-    @Mapping(target = "description",
-             expression = "java(ResolveHelper.resolve(dto.getDescription(), dto.getDefaultDescription(), jsonReq, jsonRes))")
-    @Mapping(target = "result",
-             expression = "java(ResolveHelper.resolveResult(jsonReq, jsonRes, dto))")
+    @Mapping(target = "description", expression = "java(ResolveHelper.resolve(dto.getDescription(), dto.getDefaultDescription(), jsonReq, jsonRes))")
+    @Mapping(target = "result", expression = "java(ResolveHelper.resolveResult(jsonReq, jsonRes, dto))")
     @Mapping(target = "status", expression = "java(status.name())")
     @Mapping(target = "mode", expression = "java(dto.getMode().name())")
-    @Mapping(target = "data",
-             expression = "java(ResolveHelper.buildData(jsonReq, jsonReq, dto))")
+    @Mapping(target = "data", expression = "java(ResolveHelper.buildData(jsonReq, jsonRes, dto))")
     protected abstract RequestDTO map(BusinessLogDTO dto, String jsonReq, String jsonRes, StatusEnum status);
 
     // ============================================================

@@ -432,7 +432,9 @@ public final class ExpressionResolver {
      *   <li>TextNode → {@code asText()}</li>
      *   <li>NumericNode → {@code asText()}</li>
      *   <li>BooleanNode → {@code "true"} / {@code "false"}</li>
-     *   <li>ObjectNode, ArrayNode, NullNode → {@code null}</li>
+     *   <li>ObjectNode con {@code _toString} → valor de esa propiedad</li>
+     *   <li>ObjectNode / ArrayNode → {@code node.toString()} (JSON plano)</li>
+     *   <li>NullNode → {@code null}</li>
      * </ul>
      */
     private static String extractValue(JsonNode node) {
@@ -440,6 +442,12 @@ public final class ExpressionResolver {
         if (node.isTextual()) return node.asText();
         if (node.isNumber()) return node.asText();
         if (node.isBoolean()) return Boolean.toString(node.asBoolean());
+        if (node.isObject()) {
+            JsonNode toString = node.get("_toString");
+            if (toString != null && toString.isTextual()) return toString.asText();
+            return node.toString();
+        }
+        if (node.isArray()) return node.toString();
         return null;
     }
 

@@ -52,7 +52,7 @@ class ExpressionResolverTest {
     @ParameterizedTest
     @CsvSource({
             "l0.l1.l2.l3.l4.l5.l6.l7.l8.l9.value, done",
-            "l0.l1.l2.l3.l4.l5.l6.l7.l8.l9,       __NULL__",
+            "l0.l1.l2.l3.l4.l5.l6.l7.l8.l9,       {\"value\":\"done\"}",
     })
     void chain10(String expr, String expected) {
         asserts(CHAIN, expr, expected);
@@ -129,7 +129,7 @@ class ExpressionResolverTest {
             "maps[\"map2\"].value,           value map2",
             "maps.map3.value,               value map3",
             "maps[\"map1\"].value,           value map1",
-            "maps.map1,                     __NULL__",
+            "maps.map1,                     {\"value\":\"value map1\"}",
     })
     void mapsNested(String expr, String expected) {
         asserts(MAPS, expr, expected);

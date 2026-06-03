@@ -68,7 +68,17 @@ public final class SafeSnapshotMapper {
         try {
             String prefix = (value instanceof Throwable) ? "exception" : "response";
             Map<String, Object> root = new LinkedHashMap<>();
-            root.put(prefix, rawValue(value, 0, maxDepth));
+            Object raw = rawValue(value, 0, maxDepth);
+            if (raw instanceof Map) {
+                Object safe = safeValue(value, 0, maxDepth);
+                if (safe instanceof Map) {
+                    Object toString = ((Map<String, Object>) safe).get("_toString");
+                    if (toString != null) {
+                        ((Map<String, Object>) raw).put("_toString", toString);
+                    }
+                }
+            }
+            root.put(prefix, raw);
             return MAPPER.writeValueAsString(root);
         } catch (JsonProcessingException e) {
             return "{\"error\": \"Failed to serialize object: " + e.getMessage() + "\"}";
@@ -119,6 +129,12 @@ public final class SafeSnapshotMapper {
             argsList.add(argMap);
             String prefix = "args" + i;
             Object raw = rawValue(args[i], 0, maxDepth);
+            if (raw instanceof Map && safeResult instanceof Map) {
+                Object safeToString = ((Map<String, Object>) safeResult).get("_toString");
+                if (safeToString != null) {
+                    ((Map<String, Object>) raw).put("_toString", safeToString);
+                }
+            }
             fields.put(prefix, raw);
             fields.put(parameter.getName(), raw);
         }

@@ -8,6 +8,7 @@ import mx.bastekor.flowweaver.dto.DataDTO;
 import mx.bastekor.flowweaver.dto.DataParamDTO;
 import mx.bastekor.flowweaver.dto.DataParamsDTO;
 import mx.bastekor.flowweaver.dto.RequestDTO;
+import mx.bastekor.flowweaver.resolver.ExpressionResolver;
 import org.springframework.core.env.Environment;
 
 import java.util.HashMap;
@@ -86,8 +87,8 @@ public final class ResolveHelper {
         return defaultIfBlank(
                 of(normalized)
                         .filter(input -> input.startsWith("response") || input.startsWith("exception"))
-                        .map(input -> mx.bastekor.flowweaver.resolver.ExpressionResolver.resolve(jsonRes, normalized))
-                        .orElseGet(() -> mx.bastekor.flowweaver.resolver.ExpressionResolver.resolve(jsonReq, "_fields", normalized)),
+                        .map(input -> ExpressionResolver.resolve(jsonRes, normalized))
+                        .orElseGet(() -> ExpressionResolver.resolve(jsonReq, "_fields", normalized)),
                 expressionDefault
         );
     }
