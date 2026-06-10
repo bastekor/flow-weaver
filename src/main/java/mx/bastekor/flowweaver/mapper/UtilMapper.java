@@ -10,6 +10,16 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValueMappingStrategy;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 @Mapper(
         componentModel = "spring",
         imports = {MergeHelper.class},
@@ -23,21 +33,21 @@ public interface UtilMapper {
     DataParamDTO mergeDataParamDTO(DataParamDTO priority, DataParamDTO fallback);
 
     default DataParamDTO[] mergeDataParamDTOArrays(DataParamDTO[] priority, DataParamDTO[] fallback) {
-        java.util.Map<String, DataParamDTO> fallbackIndex = new java.util.HashMap<>();
+        Map<String, DataParamDTO> fallbackIndex = new HashMap<>();
         if (fallback != null) {
             for (DataParamDTO f : fallback) {
-                if (f != null && f.getKey() != null && !f.getKey().isBlank()) {
+                if (f != null && isNotBlank(f.getKey())) {
                     fallbackIndex.put(f.getKey(), f);
                 }
             }
         }
 
-        java.util.List<DataParamDTO> result = new java.util.ArrayList<>();
-        java.util.Set<String> matchedKeys = new java.util.HashSet<>();
+        List<DataParamDTO> result = new ArrayList<>();
+        Set<String> matchedKeys = new HashSet<>();
 
         if (priority != null) {
             for (DataParamDTO p : priority) {
-                if (p == null || p.getKey() == null || p.getKey().isBlank()) continue;
+                if (p == null || isBlank(p.getKey())) continue;
                 DataParamDTO f = fallbackIndex.get(p.getKey());
                 if (f != null) {
                     result.add(mergeDataParamDTO(p, f));
@@ -48,7 +58,7 @@ public interface UtilMapper {
             }
         }
 
-        for (java.util.Map.Entry<String, DataParamDTO> entry : fallbackIndex.entrySet()) {
+        for (Map.Entry<String, DataParamDTO> entry : fallbackIndex.entrySet()) {
             if (!matchedKeys.contains(entry.getKey())) {
                 result.add(entry.getValue());
             }

@@ -11,6 +11,7 @@ import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.resolver.ExpressionResolver;
 import org.springframework.core.env.Environment;
 
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,15 +26,11 @@ import static org.apache.commons.lang3.StringUtils.trim;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ResolveHelper {
 
-    // ============================================================
-    //  Infrastructure
-    // ============================================================
-
     public static void getHostNameAndIpAddress(final RequestDTO requestDTO) {
         try {
-            String hostName = java.net.InetAddress.getLocalHost().getHostName();
+            String hostName = InetAddress.getLocalHost().getHostName();
             requestDTO.setHostName(hostName);
-            String ipAddress = java.net.InetAddress.getLocalHost().getHostAddress();
+            String ipAddress = InetAddress.getLocalHost().getHostAddress();
             requestDTO.setIpAddress(ipAddress);
         } catch (Exception e) {
             log.warn("No se pudo obtener información de infraestructura: {}", e.getMessage());
@@ -73,10 +70,6 @@ public final class ResolveHelper {
         requestDTO.setInstanceId(getPropertyValue(
                 new String[]{"cloud.instance.id", "CLOUD_INSTANCE_ID"}, null, true, environment));
     }
-
-    // ============================================================
-    //  Expression resolution
-    // ============================================================
 
     public static String resolve(final String expression, final String expressionDefault,
                                  final String jsonReq, final String jsonRes) {

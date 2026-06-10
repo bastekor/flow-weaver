@@ -24,13 +24,6 @@ public class FlowWeaverService implements IFlowWeaverService {
         return frameExtractor.extract(request);
     }
 
-    // Este al parecer no va a servir porque no tiene sentido si es que vamos a devolver
-    // todos los valores con llave/valor
-    @Override
-    public Map<String, Object> generate(RequestDTO request, FrameConfig config) {
-        return frameExtractor.extract(request);
-    }
-
     @Override
     public void trace(RequestDTO request) {
         this.trace(request, this.frameConfig);

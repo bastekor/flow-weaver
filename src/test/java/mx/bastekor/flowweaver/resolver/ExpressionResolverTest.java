@@ -396,6 +396,7 @@ class ExpressionResolverTest {
                       "EMPTY".equals(exprSentinel) ? "" :
                       "BLANK".equals(exprSentinel) ? "   " : exprSentinel;
         ResolutionResult r = ExpressionResolver.resolveDetailed(json, expr);
+        System.out.println(r);
         assertNotNull(r.getError());
         assertTrue(r.getError().getMessage().contains(expectedMessage));
     }
@@ -450,6 +451,7 @@ class ExpressionResolverTest {
     @Test
     void detailedAsJsonSuccess() throws Exception {
         String json = ExpressionResolver.resolveDetailedAsJson(FLAT, "app");
+        System.out.println(json);
         assertNotNull(json);
         JsonNode node = new ObjectMapper().readTree(json);
         assertEquals("FlowWeaver", node.get("value").asText());

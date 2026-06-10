@@ -35,10 +35,6 @@ public final class ExpressionResolver {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    // ---------------------------------------------------------------
-    //  API pública — original (firmas intactas)
-    // ---------------------------------------------------------------
-
     public static String resolve(String jsonSnapshot, String expression) {
         return resolve(jsonSnapshot, null, expression);
     }
@@ -57,10 +53,6 @@ public final class ExpressionResolver {
             return null;
         }
     }
-
-    // ---------------------------------------------------------------
-    //  API pública — resolveDetailed (POJO)
-    // ---------------------------------------------------------------
 
     public static ResolutionResult resolveDetailed(String jsonSnapshot, String expression) {
         return resolveDetailed(jsonSnapshot, null, expression);
@@ -87,7 +79,6 @@ public final class ExpressionResolver {
                     "Expression is " + describeBlank(expression), asScope(rootScope), null, startNanos);
         }
 
-        // Parsear JSON
         JsonNode root;
         try {
             root = MAPPER.readTree(jsonSnapshot);
@@ -124,10 +115,6 @@ public final class ExpressionResolver {
                 null, elapsedMs, nav.resolvedPath, error);
     }
 
-    // ---------------------------------------------------------------
-    //  API pública — resolveDetailedAsJson (String)
-    // ---------------------------------------------------------------
-
     public static String resolveDetailedAsJson(String jsonSnapshot, String expression) {
         return resolveDetailedAsJson(jsonSnapshot, null, expression);
     }
@@ -146,10 +133,6 @@ public final class ExpressionResolver {
             }
         }
     }
-
-    // ---------------------------------------------------------------
-    //  Internos: construcción de resultado detallado
-    // ---------------------------------------------------------------
 
     private static String computeSuggested(List<String> tokens) {
         if (tokens == null || tokens.isEmpty()) return null;
@@ -245,19 +228,11 @@ public final class ExpressionResolver {
         return sug;
     }
 
-    // ---------------------------------------------------------------
-    //  Scope
-    // ---------------------------------------------------------------
-
     private static JsonNode resolveScope(JsonNode root, String scope) {
         if (scope == null) return root;
         String s = scope.trim();
         return s.isEmpty() ? root : navigateWithPath(root, s).node;
     }
-
-    // ---------------------------------------------------------------
-    //  Navegación con tracking de ruta
-    // ---------------------------------------------------------------
 
     /**
      * Navega desde un nodo siguiendo una ruta de segmentos, pero
@@ -286,10 +261,6 @@ public final class ExpressionResolver {
         }
         return new NavResult(current, resolved.toString(), null, null);
     }
-
-    // ---------------------------------------------------------------
-    //  Tokenizer
-    // ---------------------------------------------------------------
 
     private static List<String> tokenize(String path) {
         List<String> raw = new ArrayList<>();
@@ -364,10 +335,6 @@ public final class ExpressionResolver {
         }
     }
 
-    // ---------------------------------------------------------------
-    //  Navegación de segmento
-    // ---------------------------------------------------------------
-
     /**
      * Resuelve un segmento contra el nodo actual.
      * El orden de evaluación evita ambigüedad entre arrays y mapas.
@@ -381,10 +348,6 @@ public final class ExpressionResolver {
         }
         return node.get(segment);
     }
-
-    // ---------------------------------------------------------------
-    //  Acceso bracket: [n], [-n], ["key"], ['key'], [key]
-    // ---------------------------------------------------------------
 
     private static JsonNode bracketAccess(JsonNode node, String segment) {
         String inner = segment.substring(1, segment.length() - 1);
@@ -410,10 +373,6 @@ public final class ExpressionResolver {
                 || (s.startsWith("'") && s.endsWith("'"));
     }
 
-    // ---------------------------------------------------------------
-    //  Índice de array (soporta negativos)
-    // ---------------------------------------------------------------
-
     private static JsonNode arrayIndex(JsonNode node, int index) {
         if (!node.isArray()) {
             return null;
@@ -421,10 +380,6 @@ public final class ExpressionResolver {
         int adjusted = index >= 0 ? index : node.size() + index;
         return adjusted >= 0 && adjusted < node.size() ? node.get(adjusted) : null;
     }
-
-    // ---------------------------------------------------------------
-    //  Extracción de valor (nativa, sin _value / _toString)
-    // ---------------------------------------------------------------
 
     /**
      * Extrae el valor textual de un nodo JSON:
@@ -450,10 +405,6 @@ public final class ExpressionResolver {
         if (node.isArray()) return node.toString();
         return null;
     }
-
-    // ---------------------------------------------------------------
-    //  Inner class: resultado intermedio de navegación
-    // ---------------------------------------------------------------
 
     private static class NavResult {
         final JsonNode node;

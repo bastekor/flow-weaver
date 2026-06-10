@@ -34,7 +34,7 @@ public final class Util {
     /**
      * Esté método normaliza la entrada de datos transformandolo a modo de nuestro uso. ejemplos en los pasos
      * </br>
-     * 1. args[0] → args0, arg_2 → arg2, args-3 → args3</br>
+     * 1. arg[0] → args0, args[1] → args1, arg_2 → args2, args-3 → args3</br>
      * 2. arg0 → args0, ARGS1 → args1</br>
      * 3. Arg0 → args0</br>
      * @param expression Expresión de entrada a resolver

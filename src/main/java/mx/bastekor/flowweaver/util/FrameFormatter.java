@@ -47,7 +47,8 @@ public class FrameFormatter {
                     }
                     return true;
                 })
-                .collect(Collectors.toList());
+                .toList();
+//                .collect(Collectors.toList());
     }
 
     private String formatSingleLine(List<Map.Entry<String, Object>> entries, FrameConfig config) {

@@ -6,6 +6,7 @@ import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.mapper.RequestDTOMapper;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
+import mx.bastekor.flowweaver.util.Util;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import java.time.Instant;
 
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_ERROR;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_ERROR;
+import static mx.bastekor.flowweaver.util.Util.getDuration;
 
 @Slf4j
 @Service
@@ -27,8 +29,8 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
     @Override
     @Async("flowWeaverExecutor")
     public void processBusinessLog(final BusinessLogContainer businessLogContainer) {
+        // Cuanto duro el metodo interceptado
         final String methodDuration = businessLogContainer.getDuration();
-
         final Instant start = Instant.now();
         try {
             final RequestDTO requestDTO = requestDTOMapper.build(businessLogContainer, environment);
@@ -37,12 +39,15 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
             log.error(BUSINESS_ERROR, businessLogContainer.getStatus(), businessLogContainer.getCode(), e.getMessage(), e);
         } finally {
             final Instant end = Instant.now();
+            // Cuanto tiempo tomo el mapeo de datos
+            final String mappedDuration = getDuration(start, end);
         }
     }
 
     @Override
     @Async("flowWeaverExecutor")
     public void processAuditTrail(final AuditTrailContainer auditTrailContainer) {
+        // Cuanto tiempo duro el metodo interceptado...
         final String methodDuration = auditTrailContainer.getDuration();
 
         final Instant start = Instant.now();
@@ -53,6 +58,8 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
             log.error(AUDIT_ERROR, auditTrailContainer.getStatus(), auditTrailContainer.getCorrelationId(), e.getMessage(), e);
         } finally {
             final Instant end = Instant.now();
+            // Cuanto tiempo tomo el mapeo de datos
+            final String mappedDuration = getDuration(start, end);
         }
     }
 }

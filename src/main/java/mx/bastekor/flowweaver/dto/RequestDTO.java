@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import mx.bastekor.flowweaver.enums.Phase;
 
 @Setter
 @Getter
@@ -29,6 +30,8 @@ public class RequestDTO extends AppInfoDTO {
     private String result;
     @JsonProperty("mode")
     private String mode; // Revisar si es necesario saberlo en salida final
+    @JsonProperty("phase")
+    private Phase phase;
     @JsonProperty("data")
     private DataDTO data;
 }

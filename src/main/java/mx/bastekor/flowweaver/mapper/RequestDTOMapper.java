@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 
 import static java.util.Optional.ofNullable;
+import static mx.bastekor.flowweaver.enums.Phase.ENTRY;
+import static mx.bastekor.flowweaver.enums.Phase.EXIT;
 import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 
 @Mapper(componentModel = "spring", imports = {ResolveHelper.class, StatusEnum.class},
@@ -27,10 +29,6 @@ public abstract class RequestDTOMapper {
     @Autowired
     private UtilMapper utilMapper;
 
-    // ============================================================
-    //  MapStruct mapping: BusinessLogDTO → RequestDTO
-    // ============================================================
-
     @Mapping(target = "id", source = "dto.correlationId")
     @Mapping(target = "group", source = "dto.group")
     @Mapping(target = "code", source = "dto.code")
@@ -41,16 +39,13 @@ public abstract class RequestDTOMapper {
     @Mapping(target = "data", expression = "java(ResolveHelper.buildData(jsonReq, jsonRes, dto))")
     protected abstract RequestDTO map(BusinessLogDTO dto, String jsonReq, String jsonRes, StatusEnum status);
 
-    // ============================================================
-    //  Public entry points
-    // ============================================================
-
     public RequestDTO build(final BusinessLogContainer container, final Environment env) {
         BusinessLogDTO dto = resolveBusinessLog(container);
         if (dto == null) return null;
         dto.setCorrelationId(container.getCorrelationId());
         RequestDTO requestDTO = map(dto, container.getExitSignature(), container.getResponse(), container.getStatus());
         fillInfrastructure(requestDTO, env);
+        requestDTO.setPhase(EXIT);
         return requestDTO;
     }
 
@@ -61,12 +56,9 @@ public abstract class RequestDTOMapper {
         String jsonReq = defaultIfBlank(container.getEntrySignature(), container.getExitSignature());
         RequestDTO requestDTO = map(dto, jsonReq, container.getResponse(), container.getStatus());
         fillInfrastructure(requestDTO, env);
+        requestDTO.setPhase(container.getResponse() == null ? ENTRY : EXIT);
         return requestDTO;
     }
-
-    // ============================================================
-    //  Resolution by mode (STATIC / DYNAMIC / MERGED)
-    // ============================================================
 
     private BusinessLogDTO resolveBusinessLog(final BusinessLogContainer container) {
         return switch (container.getBusinessLog().mode()) {
@@ -99,10 +91,6 @@ public abstract class RequestDTOMapper {
             }
         };
     }
-
-    // ============================================================
-    //  Infrastructure enrichment
-    // ============================================================
 
     private void fillInfrastructure(final RequestDTO requestDTO, final Environment env) {
         ResolveHelper.fillAppInfo(requestDTO, env);

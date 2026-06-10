@@ -9,8 +9,6 @@ public interface IFlowWeaverService {
 
     Map<String, Object> generate(RequestDTO request);
 
-    Map<String, Object> generate(RequestDTO request, FrameConfig config);
-
     void trace(RequestDTO request);
 
     void trace(RequestDTO request, FrameConfig config);
