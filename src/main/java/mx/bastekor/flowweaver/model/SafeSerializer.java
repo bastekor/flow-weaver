@@ -156,15 +156,17 @@ public final class SafeSerializer {
 
             Map<String, Object> map = baseMeta(value);
             Map<String, Object> fieldsMap = new LinkedHashMap<>();
-            for (Field f : value.getClass().getDeclaredFields()) {
-                f.setAccessible(true);
-                Object fieldVal;
-                try {
-                    fieldVal = f.get(value);
-                } catch (Exception e) {
-                    fieldVal = "[unreadable:" + f.getName() + "]";
+            for (Class<?> clazz = value.getClass(); clazz != null && clazz != Object.class; clazz = clazz.getSuperclass()) {
+                for (Field f : clazz.getDeclaredFields()) {
+                    f.setAccessible(true);
+                    Object fieldVal;
+                    try {
+                        fieldVal = f.get(value);
+                    } catch (Exception e) {
+                        fieldVal = "[unreadable:" + f.getName() + "]";
+                    }
+                    fieldsMap.putIfAbsent(f.getName(), safeValue(fieldVal, depth + 1, maxDepth));
                 }
-                fieldsMap.put(f.getName(), safeValue(fieldVal, depth + 1, maxDepth));
             }
             map.put("_value", fieldsMap);
             return map;
@@ -200,9 +202,7 @@ public final class SafeSerializer {
 
     private static boolean isNotSerializable(Object o) {
         String name = o.getClass().getName();
-        return name.startsWith("javax.servlet")
-                || name.startsWith("jakarta.servlet")
-                || name.contains("Request")
-                || name.contains("Response");
+        return name.startsWith("javax.servlet.")
+                || name.startsWith("jakarta.servlet.");
     }
 }

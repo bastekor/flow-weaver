@@ -10,25 +10,24 @@ public final class Util {
 
     public static String getDuration(final Instant start, final Instant end) {
         Duration duration = Duration.between(start, end);
-        long hours = duration.toHours();
-        long minutes = duration.toMinutes();
-        long seconds = duration.minusMinutes(minutes).getSeconds();
-        long millis = duration.minusMinutes(minutes).minusSeconds(seconds).toMillis();
+        long totalMillis = Math.abs(duration.toMillis());
+        String sign = duration.isNegative() ? "-" : "";
 
-        String format = "";
-        if (hours == 0) {
-            format = String.format("%dm %ds %dms", minutes, seconds, millis);
+        long hours = totalMillis / 3_600_000;
+        long minutes = (totalMillis % 3_600_000) / 60_000;
+        long seconds = (totalMillis % 60_000) / 1_000;
+        long millis = totalMillis % 1_000;
+
+        if (hours > 0) {
+            return sign + String.format("%dh %dm %ds %dms", hours, minutes, seconds, millis);
         }
-
-        if (minutes == 0) {
-            format = String.format("%ds %dms", seconds, millis);
+        if (minutes > 0) {
+            return sign + String.format("%dm %ds %dms", minutes, seconds, millis);
         }
-
-        if (seconds == 0) {
-            format = String.format("%dms", millis);
+        if (seconds > 0) {
+            return sign + String.format("%ds %dms", seconds, millis);
         }
-
-        return format;
+        return sign + millis + "ms";
     }
 
     /**

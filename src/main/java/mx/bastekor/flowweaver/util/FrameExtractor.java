@@ -48,7 +48,7 @@ public class FrameExtractor {
                         result.put(fullKey, value);
                     }
                 } catch (Exception e) {
-                    log.trace("Cannot read field '{}': {}", field.getName(), e.getMessage());
+                    log.warn("Cannot read field '{}': {}", field.getName(), e.getMessage());
                 }
             }
         }

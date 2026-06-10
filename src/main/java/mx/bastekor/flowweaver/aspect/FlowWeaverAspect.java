@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.enums.StatusEnum;
-import mx.bastekor.flowweaver.exception.FlowWeaverException;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.service.IFlowWeaverAspectService;
@@ -75,7 +74,7 @@ public class FlowWeaverAspect {
             blc.setExitSignature(mapArgs(joinPoint, maxDepth));
             blc.setResponse(mapObject(response, maxDepth));
             blc.setBusinessLog(businessLog);
-            this.sendToPublish(blc);
+            flowWeaverAspectService.processBusinessLog(blc);
             printRecursive(bool);
             clearBusinessLogContainer(blc.getCode());
             log.info(BUSINESS_LOG_END, status);
@@ -102,7 +101,7 @@ public class FlowWeaverAspect {
         inAuditTrailContainer.setEntrySignature(mapArgs(joinPoint, maxDepth));
         inAuditTrailContainer.setStatus(SOURCE_SUCCESS);
         addAuditTrailContainer(true, inAuditTrailContainer, blc);
-        this.sendToPublish(inAuditTrailContainer);
+        flowWeaverAspectService.processAuditTrail(inAuditTrailContainer);
 
         // Se crea el objeto de salida antes de invocar al método anotado para obtener duración.
         final AuditTrailContainer outAuditTrailContainer = new AuditTrailContainer();
@@ -124,7 +123,7 @@ public class FlowWeaverAspect {
             outAuditTrailContainer.setResponse(mapObject(response, maxDepth));
             outAuditTrailContainer.setStatus(status);
             addAuditTrailContainer(false, outAuditTrailContainer, blc);
-            this.sendToPublish(outAuditTrailContainer);
+            flowWeaverAspectService.processAuditTrail(outAuditTrailContainer);
 
             // Eliminamos el "BusinessLogContainer" creado únicamente para estos "AuditTrailContainer"s.
             if (isBlank(auditTrail.parentCode())) {
@@ -143,33 +142,4 @@ public class FlowWeaverAspect {
         auditTrailContainer.setAuditTrail(auditTrail);
     }
 
-    private void sendToPublish(final BusinessLogContainer businessLogContainer) {
-        try {
-            flowWeaverAspectService.processBusinessLog(businessLogContainer);
-        } catch (FlowWeaverException exception) {
-            log.error("Error procesando BusinessLog: {}", exception.getMessage(), exception);
-            // Deberemos de mandar a log datos iniciales mas errores de exc...
-
-            /*
-             * Aquí se podrá aplicar alguna lógica que permita el envío de datos de entrada y la búsqueda recursiva de las
-             * excepciones anidadas. Quizás con el tiempo se puede implementar algún método que permita saber que datos se
-             * fueron tomando y que datos no, pero eso solo será informativo para mantenimiento de esta dependencia, ya que
-             * errores en lógica interna de como se maneja "x" o "y" cosa es tema propio que no debe de afectar la legibilidad
-             * de la traza que se llegue a mandar, mas bien deberá de complementarla.
-             */
-        } finally {
-            // Termino...
-        }
-    }
-
-    private void sendToPublish(final AuditTrailContainer auditTrailContainer) {
-        try {
-            flowWeaverAspectService.processAuditTrail(auditTrailContainer);
-        } catch (FlowWeaverException exception) {
-            log.error("Error procesando AuditTrail: {}", exception.getMessage(), exception);
-            /*
-            Aquí intentar mandar a procesar con datos primarios
-             */
-        }
-    }
 }

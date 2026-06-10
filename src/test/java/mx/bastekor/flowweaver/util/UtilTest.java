@@ -45,4 +45,28 @@ class UtilTest {
         String result = Util.getDuration(start, end);
         assertEquals("-10s 0ms", result);
     }
+
+    @Test
+    void testGetDuration_HoursMinutesSecondsMillis() {
+        Instant start = Instant.parse("2024-01-01T00:00:00.000Z");
+        Instant end = Instant.parse("2024-01-01T01:02:03.004Z");
+        String result = Util.getDuration(start, end);
+        assertEquals("1h 2m 3s 4ms", result);
+    }
+
+    @Test
+    void testGetDuration_OnlyMinutesNoSeconds() {
+        Instant start = Instant.parse("2024-01-01T00:00:00.000Z");
+        Instant end = Instant.parse("2024-01-01T00:05:00.000Z");
+        String result = Util.getDuration(start, end);
+        assertEquals("5m 0s 0ms", result);
+    }
+
+    @Test
+    void testGetDuration_HoursAndMinutesExact() {
+        Instant start = Instant.parse("2024-01-01T00:00:00.000Z");
+        Instant end = Instant.parse("2024-01-01T01:30:00.000Z");
+        String result = Util.getDuration(start, end);
+        assertEquals("1h 30m 0s 0ms", result);
+    }
 }

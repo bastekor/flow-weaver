@@ -119,6 +119,77 @@ class SafeSerializerTest {
     }
 
     // ===================================================================
+    //  isNotSerializable — falso positivo con DTOs nombrados Request/Response
+    // ===================================================================
+
+    @Test
+    void rawValue_dtoWithRequestInName_isSerialized() {
+        CreateUserRequest dto = new CreateUserRequest("john", 25);
+        Object result = SafeSerializer.rawValue(dto, 0, 5);
+        assertInstanceOf(Map.class, result, "CreateUserRequest DEBE serializarse como Map, no como NOT_SERIALIZABLE");
+        Map<?, ?> map = (Map<?, ?>) result;
+        assertEquals("john", map.get("username"));
+        assertEquals(25, map.get("age"));
+    }
+
+    @Test
+    void rawValue_dtoWithResponseInName_isSerialized() {
+        PaymentResponse dto = new PaymentResponse("OK", "TRX-001");
+        Object result = SafeSerializer.rawValue(dto, 0, 5);
+        assertInstanceOf(Map.class, result, "PaymentResponse DEBE serializarse como Map, no como NOT_SERIALIZABLE");
+        Map<?, ?> map = (Map<?, ?>) result;
+        assertEquals("OK", map.get("status"));
+        assertEquals("TRX-001", map.get("transactionId"));
+    }
+
+    @Getter
+    @AllArgsConstructor
+    static class CreateUserRequest {
+        private String username;
+        private int age;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    static class PaymentResponse {
+        private String status;
+        private String transactionId;
+    }
+
+    // ===================================================================
+    //  safeValue — herencia de campos (superclases)
+    // ===================================================================
+
+    @Test
+    void safeValue_inheritedFields_areIncluded() {
+        Dog dto = new Dog("Canine", "Husky");
+        Object result = SafeSerializer.safeValue(dto, 0, 5);
+
+        assertInstanceOf(Map.class, result);
+        Map<?, ?> meta = (Map<?, ?>) result;
+        assertEquals("mx.bastekor.flowweaver.model.SafeSerializerTest$Dog", meta.get("_type"));
+
+        Object rawValue = meta.get("_value");
+        assertInstanceOf(Map.class, rawValue);
+        Map<?, ?> fields = (Map<?, ?>) rawValue;
+
+        assertEquals("Husky", fields.get("breed"));
+        assertEquals("Canine", fields.get("species"));
+    }
+
+    @Getter
+    static class Animal {
+        private final String species;
+        Animal(String species) { this.species = species; }
+    }
+
+    @Getter
+    static class Dog extends Animal {
+        private final String breed;
+        Dog(String species, String breed) { super(species); this.breed = breed; }
+    }
+
+    // ===================================================================
     //  rawValue — integración con Jackson + ExpressionResolver
     // ===================================================================
 
