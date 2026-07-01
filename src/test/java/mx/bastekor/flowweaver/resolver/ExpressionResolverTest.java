@@ -359,6 +359,7 @@ class ExpressionResolverTest {
     @MethodSource("detailedSuccessSource")
     void detailedSuccess(String expr, String value, String suggested, String resolvedPath) {
         ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, expr);
+        System.out.println(r);
         assertNull(r.getError());
         assertEquals(value, r.getValue());
         assertEquals(suggested, r.getSuggested());

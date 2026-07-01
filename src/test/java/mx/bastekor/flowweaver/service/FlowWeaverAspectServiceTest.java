@@ -7,6 +7,7 @@ import lombok.ToString;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.dto.RequestDTO;
+import mx.bastekor.flowweaver.enums.Phase;
 import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.mapper.RequestDTOMapper;
 import mx.bastekor.flowweaver.mapper.SafeSnapshotMapper;
@@ -52,6 +53,9 @@ class FlowWeaverAspectServiceTest {
     @Mock
     private RequestDTOMapper requestDTOMapper;
 
+    @Mock
+    private IFlowWeaverService flowWeaverService;
+
     @InjectMocks
     private FlowWeaverAspectService flowWeaverAspectService;
 
@@ -90,6 +94,7 @@ class FlowWeaverAspectServiceTest {
                     dto.setStatus(StatusEnum.SOURCE_SUCCESS.name());
                     dto.setResult("en MXN");
                     dto.setMode("STATIC");
+                    dto.setPhase(Phase.EXIT);
                     return dto;
                 });
 
