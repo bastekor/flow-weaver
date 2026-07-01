@@ -4,15 +4,20 @@ import mx.bastekor.flowweaver.config.FlowWeaverRootConfig;
 import mx.bastekor.flowweaver.dto.AuditTrailDTO;
 import mx.bastekor.flowweaver.dto.BusinessLogDTO;
 import mx.bastekor.flowweaver.dto.RequestDTO;
+import mx.bastekor.flowweaver.dto.SimpleRequestDTO;
 import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
+import mx.bastekor.flowweaver.resolver.ResolutionResult;
 import mx.bastekor.flowweaver.util.ResolveHelper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static java.util.Optional.ofNullable;
 import static mx.bastekor.flowweaver.enums.Phase.ENTRY;
@@ -32,20 +37,38 @@ public abstract class RequestDTOMapper {
     @Mapping(target = "id", source = "dto.correlationId")
     @Mapping(target = "group", source = "dto.group")
     @Mapping(target = "code", source = "dto.code")
-    @Mapping(target = "description", expression = "java(ResolveHelper.resolve(dto.getDescription(), dto.getDefaultDescription(), jsonReq, jsonRes))")
-    @Mapping(target = "result", expression = "java(ResolveHelper.resolveResult(jsonReq, jsonRes, dto))")
     @Mapping(target = "status", expression = "java(status.name())")
     @Mapping(target = "mode", expression = "java(dto.getMode().name())")
-    @Mapping(target = "data", expression = "java(ResolveHelper.buildData(jsonReq, jsonRes, dto))")
-    protected abstract RequestDTO map(BusinessLogDTO dto, String jsonReq, String jsonRes, StatusEnum status);
+    protected abstract RequestDTO mapBase(BusinessLogDTO dto, StatusEnum status);
 
     public RequestDTO build(final BusinessLogContainer container, final Environment env) {
         BusinessLogDTO dto = resolveBusinessLog(container);
         if (dto == null) return null;
         dto.setCorrelationId(container.getCorrelationId());
-        RequestDTO requestDTO = map(dto, container.getExitSignature(), container.getResponse(), container.getStatus());
+
+        String jsonReq = container.getExitSignature();
+        String jsonRes = container.getResponse();
+
+        RequestDTO requestDTO = mapBase(dto, container.getStatus());
+
+        Map<String, ResolutionResult> resolution = new LinkedHashMap<>();
+
+        ResolutionResult desc = ResolveHelper.resolve(
+                dto.getDescription(), dto.getDefaultDescription(), jsonReq, jsonRes);
+        requestDTO.setDescription(desc.getValue());
+        resolution.put("description", desc);
+
+        ResolutionResult result = ResolveHelper.resolveResult(jsonReq, jsonRes, dto);
+        requestDTO.setResult(result.getValue());
+        resolution.put("result", result);
+
+        requestDTO.setData(ResolveHelper.buildDataWithDiagnostics(
+                jsonReq, jsonRes, dto, resolution));
+
+        requestDTO.setResolution(resolution);
         fillInfrastructure(requestDTO, env);
         requestDTO.setPhase(EXIT);
+
         return requestDTO;
     }
 
@@ -53,10 +76,30 @@ public abstract class RequestDTOMapper {
         AuditTrailDTO dto = resolveAuditTrail(container);
         if (dto == null) return null;
         dto.setCorrelationId(container.getCorrelationId());
+
         String jsonReq = defaultIfBlank(container.getEntrySignature(), container.getExitSignature());
-        RequestDTO requestDTO = map(dto, jsonReq, container.getResponse(), container.getStatus());
+        String jsonRes = container.getResponse();
+
+        RequestDTO requestDTO = mapBase(dto, container.getStatus());
+
+        Map<String, ResolutionResult> resolution = new LinkedHashMap<>();
+
+        ResolutionResult desc = ResolveHelper.resolve(
+                dto.getDescription(), dto.getDefaultDescription(), jsonReq, jsonRes);
+        requestDTO.setDescription(desc.getValue());
+        resolution.put("description", desc);
+
+        ResolutionResult result = ResolveHelper.resolveResult(jsonReq, jsonRes, dto);
+        requestDTO.setResult(result.getValue());
+        resolution.put("result", result);
+
+        requestDTO.setData(ResolveHelper.buildDataWithDiagnostics(
+                jsonReq, jsonRes, dto, resolution));
+
+        requestDTO.setResolution(resolution);
         fillInfrastructure(requestDTO, env);
-        requestDTO.setPhase(container.getResponse() == null ? ENTRY : EXIT);
+        requestDTO.setPhase(jsonRes == null ? ENTRY : EXIT);
+
         return requestDTO;
     }
 
@@ -92,7 +135,7 @@ public abstract class RequestDTOMapper {
         };
     }
 
-    private void fillInfrastructure(final RequestDTO requestDTO, final Environment env) {
+    private void fillInfrastructure(final SimpleRequestDTO requestDTO, final Environment env) {
         ResolveHelper.fillAppInfo(requestDTO, env);
         ResolveHelper.fillInfrastructureInfo(requestDTO, env);
         ResolveHelper.getHostNameAndIpAddress(requestDTO);

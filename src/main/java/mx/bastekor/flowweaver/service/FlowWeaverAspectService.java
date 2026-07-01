@@ -2,7 +2,7 @@ package mx.bastekor.flowweaver.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import mx.bastekor.flowweaver.dto.RequestDTO;
+import mx.bastekor.flowweaver.dto.SimpleRequestDTO;
 import mx.bastekor.flowweaver.mapper.RequestDTOMapper;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
@@ -33,7 +33,7 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
         final String methodDuration = businessLogContainer.getDuration();
         final Instant start = Instant.now();
         try {
-            final RequestDTO requestDTO = requestDTOMapper.build(businessLogContainer, environment);
+            final SimpleRequestDTO requestDTO = requestDTOMapper.build(businessLogContainer, environment);
             flowWeaverService.trace(requestDTO);
         } catch (Exception e) {
             log.error(BUSINESS_ERROR, businessLogContainer.getStatus(), businessLogContainer.getCode(), e.getMessage(), e);
@@ -52,7 +52,7 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
 
         final Instant start = Instant.now();
         try {
-            final RequestDTO requestDTO = requestDTOMapper.build(auditTrailContainer, environment);
+            final SimpleRequestDTO requestDTO = requestDTOMapper.build(auditTrailContainer, environment);
             flowWeaverService.trace(requestDTO);
         } catch (Exception e) {
             log.error(AUDIT_ERROR, auditTrailContainer.getStatus(), auditTrailContainer.getCorrelationId(), e.getMessage(), e);

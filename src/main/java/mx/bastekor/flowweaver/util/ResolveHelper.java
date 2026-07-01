@@ -7,17 +7,16 @@ import mx.bastekor.flowweaver.dto.BusinessLogDTO;
 import mx.bastekor.flowweaver.dto.DataDTO;
 import mx.bastekor.flowweaver.dto.DataParamDTO;
 import mx.bastekor.flowweaver.dto.DataParamsDTO;
-import mx.bastekor.flowweaver.dto.RequestDTO;
+import mx.bastekor.flowweaver.dto.SimpleRequestDTO;
 import mx.bastekor.flowweaver.resolver.ExpressionResolver;
+import mx.bastekor.flowweaver.resolver.ResolutionResult;
 import org.springframework.core.env.Environment;
 
 import java.net.InetAddress;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static java.util.Optional.of;
 import static mx.bastekor.flowweaver.util.Util.normalizeInput;
-import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.trim;
@@ -26,7 +25,9 @@ import static org.apache.commons.lang3.StringUtils.trim;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ResolveHelper {
 
-    public static void getHostNameAndIpAddress(final RequestDTO requestDTO) {
+    // ---- Infrastructure helpers ----
+
+    public static void getHostNameAndIpAddress(final SimpleRequestDTO requestDTO) {
         try {
             String hostName = InetAddress.getLocalHost().getHostName();
             requestDTO.setHostName(hostName);
@@ -50,7 +51,7 @@ public final class ResolveHelper {
         return defaultValue;
     }
 
-    public static void fillAppInfo(final RequestDTO requestDTO, final Environment environment) {
+    public static void fillAppInfo(final SimpleRequestDTO requestDTO, final Environment environment) {
         requestDTO.setAppName(getPropertyValue(
                 new String[]{"info.app.name", "spring.application.name", "application.name", "app.name"},
                 null, false, environment));
@@ -62,7 +63,7 @@ public final class ResolveHelper {
                 null, false, environment));
     }
 
-    public static void fillInfrastructureInfo(final RequestDTO requestDTO, final Environment environment) {
+    public static void fillInfrastructureInfo(final SimpleRequestDTO requestDTO, final Environment environment) {
         requestDTO.setRegion(getPropertyValue(
                 new String[]{"cloud.region", "CLOUD_REGION"}, null, true, environment));
         requestDTO.setZone(getPropertyValue(
@@ -71,23 +72,27 @@ public final class ResolveHelper {
                 new String[]{"cloud.instance.id", "CLOUD_INSTANCE_ID"}, null, true, environment));
     }
 
-    public static String resolve(final String expression, final String expressionDefault,
-                                 final String jsonReq, final String jsonRes) {
+    // ---- Expression resolution ----
+
+    public static ResolutionResult resolve(final String expression, final String expressionDefault,
+                                           final String jsonReq, final String jsonRes) {
         if (isBlank(expression)) {
-            return trim(expressionDefault);
+            return new ResolutionResult(null, null, null, null,
+                    trim(expressionDefault), 0, null, null);
         }
         final String normalized = normalizeInput(expression);
-        return defaultIfBlank(
-                of(normalized)
-                        .filter(input -> input.startsWith("response") || input.startsWith("exception"))
-                        .map(input -> ExpressionResolver.resolve(jsonRes, normalized))
-                        .orElseGet(() -> ExpressionResolver.resolve(jsonReq, "_fields", normalized)),
-                expressionDefault
-        );
+        boolean isResponse = normalized.startsWith("response") || normalized.startsWith("exception");
+        String snapshot = isResponse ? jsonRes : jsonReq;
+        String scope = isResponse ? null : "_fields";
+        ResolutionResult result = ExpressionResolver.resolveDetailed(snapshot, scope, normalized);
+        if (result.getValue() == null) {
+            result.setValue(expressionDefault);
+        }
+        return result;
     }
 
-    public static String resolveResult(final String jsonReq, final String jsonRes,
-                                       final BusinessLogDTO dto) {
+    public static ResolutionResult resolveResult(final String jsonReq, final String jsonRes,
+                                                 final BusinessLogDTO dto) {
         if (jsonRes != null && jsonRes.contains("\"exception\"")) {
             return resolve(dto.getException(), dto.getDefaultException(), jsonReq, jsonRes);
         }
@@ -96,23 +101,42 @@ public final class ResolveHelper {
 
     public static DataDTO buildData(final String jsonReq, final String jsonRes,
                                     final DataParamsDTO dtos) {
-        final DataDTO dataDTO = new DataDTO();
-        if (dtos.getDataInOut() != null) {
-            dataDTO.setDataInOut(resolveParams(jsonReq, jsonRes, dtos.getDataInOut()));
-        } else {
-            dataDTO.setDataIn(resolveParams(jsonReq, jsonReq, dtos.getDataIn()));
-            dataDTO.setDataOut(resolveParams(jsonReq, jsonRes, dtos.getDataOut()));
-        }
-        return dataDTO;
+        Map<String, ResolutionResult> ignored = new LinkedHashMap<>();
+        return buildDataWithDiagnostics(jsonReq, jsonRes, dtos, ignored);
     }
 
-    private static Map<String, String> resolveParams(final String jsonReq, final String jsonRes,
-                                                      final DataParamDTO[] dtos) {
-        if (dtos == null) return null;
-        Map<String, String> map = new HashMap<>(dtos.length);
-        for (DataParamDTO dto : dtos) {
-            map.put(dto.getKey(), resolve(dto.getValue(), dto.getDefaultValue(), jsonReq, jsonRes));
+    public static DataDTO buildDataWithDiagnostics(final String jsonReq, final String jsonRes,
+                                                   final DataParamsDTO dtos,
+                                                   final Map<String, ResolutionResult> diagnosticsOut) {
+        final DataDTO dataDTO = new DataDTO();
+        if (dtos.getDataInOut() != null) {
+            Map<String, String> vals = new LinkedHashMap<>();
+            for (DataParamDTO p : dtos.getDataInOut()) {
+                ResolutionResult r = resolve(p.getValue(), p.getDefaultValue(), jsonReq, jsonRes);
+                vals.put(p.getKey(), r.getValue());
+                diagnosticsOut.put("data.in_out." + p.getKey(), r);
+            }
+            dataDTO.setDataInOut(vals);
+        } else {
+            if (dtos.getDataIn() != null) {
+                Map<String, String> vals = new LinkedHashMap<>();
+                for (DataParamDTO p : dtos.getDataIn()) {
+                    ResolutionResult r = resolve(p.getValue(), p.getDefaultValue(), jsonReq, jsonReq);
+                    vals.put(p.getKey(), r.getValue());
+                    diagnosticsOut.put("data.in." + p.getKey(), r);
+                }
+                dataDTO.setDataIn(vals);
+            }
+            if (dtos.getDataOut() != null) {
+                Map<String, String> vals = new LinkedHashMap<>();
+                for (DataParamDTO p : dtos.getDataOut()) {
+                    ResolutionResult r = resolve(p.getValue(), p.getDefaultValue(), jsonReq, jsonRes);
+                    vals.put(p.getKey(), r.getValue());
+                    diagnosticsOut.put("data.out." + p.getKey(), r);
+                }
+                dataDTO.setDataOut(vals);
+            }
         }
-        return map;
+        return dataDTO;
     }
 }

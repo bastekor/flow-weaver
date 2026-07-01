@@ -8,7 +8,7 @@ import mx.bastekor.flowweaver.dto.AuditTrailDTO;
 import mx.bastekor.flowweaver.dto.BusinessLogDTO;
 import mx.bastekor.flowweaver.dto.DataParamDTO;
 import mx.bastekor.flowweaver.dto.DataParamsDTO;
-import mx.bastekor.flowweaver.dto.RequestDTO;
+import mx.bastekor.flowweaver.dto.SimpleRequestDTO;
 import mx.bastekor.flowweaver.enums.Mode;
 import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
@@ -112,10 +112,10 @@ public class TestFactory {
         return dto;
     }
 
-    // ========== RequestDTO ==========
+    // ========== SimpleRequestDTO ==========
 
-    public static RequestDTO aRequestDTO() {
-        RequestDTO dto = new RequestDTO();
+    public static SimpleRequestDTO aSimpleRequestDTO() {
+        SimpleRequestDTO dto = new SimpleRequestDTO();
         dto.setId(UUID.randomUUID().toString());
         dto.setGroup("G");
         dto.setCode("C");
@@ -126,16 +126,16 @@ public class TestFactory {
         return dto;
     }
 
-    public static RequestDTO aRequestDTO(String id, String group, String code) {
-        RequestDTO dto = aRequestDTO();
+    public static SimpleRequestDTO aSimpleRequestDTO(String id, String group, String code) {
+        SimpleRequestDTO dto = aSimpleRequestDTO();
         dto.setId(id);
         dto.setGroup(group);
         dto.setCode(code);
         return dto;
     }
 
-    public static RequestDTO aRequestDTO(Consumer<RequestDTO> c) {
-        RequestDTO dto = aRequestDTO();
+    public static SimpleRequestDTO aSimpleRequestDTO(Consumer<SimpleRequestDTO> c) {
+        SimpleRequestDTO dto = aSimpleRequestDTO();
         c.accept(dto);
         return dto;
     }

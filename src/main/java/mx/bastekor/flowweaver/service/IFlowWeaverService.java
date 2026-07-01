@@ -1,15 +1,15 @@
 package mx.bastekor.flowweaver.service;
 
 import mx.bastekor.flowweaver.config.FrameConfig;
-import mx.bastekor.flowweaver.dto.RequestDTO;
+import mx.bastekor.flowweaver.dto.SimpleRequestDTO;
 
 import java.util.Map;
 
 public interface IFlowWeaverService {
 
-    Map<String, Object> generate(RequestDTO request);
+    Map<String, Object> generate(SimpleRequestDTO request);
 
-    void trace(RequestDTO request);
+    void trace(SimpleRequestDTO request);
 
-    void trace(RequestDTO request, FrameConfig config);
+    void trace(SimpleRequestDTO request, FrameConfig config);
 }
