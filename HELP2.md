@@ -29,3 +29,7 @@
         }
     ]
 }
+```
+
+# Notas
+* La clase **ExpressionResolver** será pública, por ende, podrá ser usada por dev

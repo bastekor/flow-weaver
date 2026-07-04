@@ -364,7 +364,7 @@ class ExpressionResolverTest {
         assertEquals(value, r.getValue());
         assertEquals(suggested, r.getSuggested());
         assertEquals(resolvedPath, r.getResolvedPath());
-        assertTrue(r.getDurationMs() >= 0);
+        assertNotNull(r.getDuration());
     }
 
     static Stream<Arguments> detailedSuccessSource() {
@@ -377,7 +377,7 @@ class ExpressionResolverTest {
 
     @Test
     void detailedWithScope() {
-        ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, null, "app");
+        ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, null, "app", null);
         assertNull(r.getError());
         assertEquals("FlowWeaver", r.getValue());
         assertEquals("app", r.getSuggested());
@@ -409,7 +409,6 @@ class ExpressionResolverTest {
         assertNotNull(r.getError());
         assertEquals("", r.getResolvedPath());
         assertEquals("Field 'no' not found in 'snapshot JSON'", r.getError().getMessage());
-        assertNull(r.getError().getLastPath());
         assertNotNull(r.getError().getSuggestions());
         assertFalse(r.getError().getSuggestions().isEmpty());
     }
@@ -421,6 +420,33 @@ class ExpressionResolverTest {
         assertNotNull(r.getError());
         assertEquals("features", r.getResolvedPath());
         assertEquals("Field 'nonexistent' not found in 'features'", r.getError().getMessage());
+    }
+
+    @Test
+    void detailedWithDefaultOnFallback() {
+        ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, null, "no.existe", "defaultVal");
+        System.out.println(r);
+        assertNotNull(r.getError());
+        assertEquals("defaultVal", r.getValue());
+        assertTrue(r.isFallback());
+    }
+
+    @Test
+    void detailedWithDefaultOnSuccess() {
+        ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, null, "app", "defaultVal");
+        System.out.println(r);
+        assertNull(r.getError());
+        assertEquals("FlowWeaver", r.getValue());
+        assertFalse(r.isFallback());
+    }
+
+    @Test
+    void detailedWithDefaultNullExpression() {
+        ResolutionResult r = ExpressionResolver.resolveDetailed(FLAT, null, null, "defaultVal");
+        System.out.println(r);
+        assertNotNull(r.getError());
+        assertEquals("defaultVal", r.getValue());
+        assertTrue(r.isFallback());
     }
 
     @Test
@@ -472,8 +498,9 @@ class ExpressionResolverTest {
 
     @Test
     void detailedAsJsonWithScope() throws Exception {
-        String json = ExpressionResolver.resolveDetailedAsJson(FLAT, "tags", "0");
+        String json = ExpressionResolver.resolveDetailedAsJson(FLAT, "tags", "0", null);
         assertNotNull(json);
+        System.out.println(json);
         JsonNode node = new ObjectMapper().readTree(json);
         assertEquals("beta", node.get("value").asText());
         assertEquals("tags", node.get("rootScope").asText());

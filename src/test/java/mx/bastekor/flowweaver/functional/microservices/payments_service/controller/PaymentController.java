@@ -13,6 +13,7 @@ public class PaymentController {
     private PaymentService paymentService;
 
     public PaymentResponse pay(PaymentRequest request) {
-        return paymentService.pay(request);
+        String ejemploDeMensaje = "mensaje de propiedad(1)";
+        return paymentService.pay(request, ejemploDeMensaje);
     }
 }

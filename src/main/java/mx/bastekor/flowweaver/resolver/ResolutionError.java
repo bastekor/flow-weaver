@@ -15,6 +15,5 @@ import java.util.List;
 @AllArgsConstructor
 public class ResolutionError {
     private String message;
-    private String lastPath;
     private List<String> suggestions;
 }

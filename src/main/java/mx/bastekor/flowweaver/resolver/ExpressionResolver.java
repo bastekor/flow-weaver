@@ -6,8 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
+import static java.time.Instant.now;
+import static mx.bastekor.flowweaver.util.Util.getDuration;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * Resuelve expresiones de acceso a datos contra cualquier árbol JSON.
@@ -55,77 +61,73 @@ public final class ExpressionResolver {
     }
 
     public static ResolutionResult resolveDetailed(String jsonSnapshot, String expression) {
-        return resolveDetailed(jsonSnapshot, null, expression);
+        return resolveDetailed(jsonSnapshot, null, expression, null);
     }
 
-    public static ResolutionResult resolveDetailed(String jsonSnapshot, String rootScope, String expression) {
-        long startNanos = System.nanoTime();
+    public static ResolutionResult resolveDetailed(String jsonSnapshot, String rootScope,
+                                                    String expression, String expressionDefault) {
+        Instant start = now();
 
-        List<String> tokens = (expression == null || expression.isBlank())
-                ? List.of() : tokenize(expression.trim());
+        if (isBlank(jsonSnapshot)) {
+            return failedResult(jsonSnapshot, rootScope, expression, null,
+                    "Snapshot is " + describeBlank(jsonSnapshot), null, start, expressionDefault);
+        }
+        if (isBlank(expression)) {
+            return failedResult(jsonSnapshot, rootScope, expression, null,
+                    "Expression is " + describeBlank(expression), null, start, expressionDefault);
+        }
+
+        List<String> tokens = isBlank(expression) ? List.of() : tokenize(expression.trim());
         String suggested = computeSuggested(tokens);
-
-        // Validaciones de entrada
-        if (jsonSnapshot == null) {
-            return failedResult(null, rootScope, expression, suggested,
-                    "Snapshot is null", asScope(rootScope), null, startNanos);
-        }
-        if (expression == null) {
-            return failedResult(jsonSnapshot, rootScope, null, suggested,
-                    "Expression is null", asScope(rootScope), null, startNanos);
-        }
-        if (expression.isBlank()) {
-            return failedResult(jsonSnapshot, rootScope, expression, suggested,
-                    "Expression is " + describeBlank(expression), asScope(rootScope), null, startNanos);
-        }
 
         JsonNode root;
         try {
             root = MAPPER.readTree(jsonSnapshot);
         } catch (JsonParseException e) {
             return failedResult(jsonSnapshot, rootScope, expression, suggested,
-                    "Invalid JSON: " + e.getOriginalMessage(), "root",
-                    List.of("Verify JSON syntax near line " + e.getLocation().getLineNr()), startNanos);
+                    "Invalid JSON: " + e.getOriginalMessage(),
+                    List.of("Verify JSON syntax near line " + e.getLocation().getLineNr()), start, expressionDefault);
         } catch (Exception e) {
             return failedResult(jsonSnapshot, rootScope, expression, suggested,
-                    "Invalid JSON: " + e.getMessage(), "root",
-                    List.of("Verify the JSON structure"), startNanos);
+                    "Invalid JSON: " + e.getMessage(),
+                    List.of("Verify the JSON structure"), start, expressionDefault);
         }
 
         // Resolver scope
-        JsonNode start = resolveScope(root, rootScope);
-        if (start == null) {
+        JsonNode scopeNode = resolveScope(root, rootScope);
+        if (scopeNode == null) {
             return failedResult(jsonSnapshot, rootScope, expression, suggested,
-                    "Scope '" + rootScope + "' not found in root", "root",
-                    buildScopeSuggestions(root, rootScope), startNanos);
+                    "Scope '" + rootScope + "' not found in root",
+                    buildScopeSuggestions(root, rootScope), start, expressionDefault);
         }
 
         // Navegar
-        NavResult nav = navigateWithPath(start, tokens);
-        long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
+        NavResult nav = navigateWithPath(scopeNode, tokens);
 
         if (nav.node != null) {
             String value = extractValue(nav.node);
             return new ResolutionResult(jsonSnapshot, rootScope, expression, suggested,
-                    value, elapsedMs, nav.resolvedPath, null);
+                    value, false, getDuration(start, now()), nav.resolvedPath, null);
         }
 
-        ResolutionError error = buildError(nav, rootScope);
+        ResolutionError error = buildError(nav);
         return new ResolutionResult(jsonSnapshot, rootScope, expression, suggested,
-                null, elapsedMs, nav.resolvedPath, error);
+                expressionDefault, true, getDuration(start, now()), nav.resolvedPath, error);
     }
 
     public static String resolveDetailedAsJson(String jsonSnapshot, String expression) {
-        return resolveDetailedAsJson(jsonSnapshot, null, expression);
+        return resolveDetailedAsJson(jsonSnapshot, null, expression, null);
     }
 
-    public static String resolveDetailedAsJson(String jsonSnapshot, String rootScope, String expression) {
+    public static String resolveDetailedAsJson(String jsonSnapshot, String rootScope,
+                                                String expression, String expressionDefault) {
         try {
-            ResolutionResult result = resolveDetailed(jsonSnapshot, rootScope, expression);
+            ResolutionResult result = resolveDetailed(jsonSnapshot, rootScope, expression, expressionDefault);
             return MAPPER.writeValueAsString(result);
         } catch (Exception e) {
+            Instant start = now();
             ResolutionResult fallback = failedResult(jsonSnapshot, rootScope, expression, null,
-                    "Serialization error: " + e.getMessage(), asScope(rootScope), null, System.nanoTime());
+                    "Serialization error: " + e.getMessage(), null, start, expressionDefault);
             try {
                 return MAPPER.writeValueAsString(fallback);
             } catch (Exception ex) {
@@ -161,31 +163,24 @@ public final class ExpressionResolver {
         return s.isEmpty() ? "EMPTY" : "BLANK";
     }
 
-    private static String asScope(String scope) {
-        return scope == null ? null : scope.trim();
-    }
-
     private static ResolutionResult failedResult(String snapshot, String scope, String expr,
-                                                  String suggested, String message, String lastPath,
-                                                  List<String> suggestions, long startNanos) {
-        long elapsed = (System.nanoTime() - startNanos) / 1_000_000;
+                                                  String suggested, String message,
+                                                  List<String> suggestions, Instant start,
+                                                  String expressionDefault) {
         List<String> sug = suggestions != null ? suggestions : List.of();
-        ResolutionError err = new ResolutionError(message, lastPath, sug);
-        return new ResolutionResult(snapshot, scope, expr, suggested, null,
-                elapsed, "", err);
+        ResolutionError err = new ResolutionError(message, sug);
+        return new ResolutionResult(snapshot, scope, expr, suggested, expressionDefault,
+                true, getDuration(start, now()), EMPTY, err);
     }
 
-    private static ResolutionError buildError(NavResult nav, String rootScope) {
+    private static ResolutionError buildError(NavResult nav) {
         String seg = nav.failedSegment;
         JsonNode parent = nav.parentNode;
-        String displayPath = nav.resolvedPath.isEmpty()
-                ? "snapshot JSON" : nav.resolvedPath;
-        String lastPath = nav.resolvedPath.isEmpty()
-                ? asScope(rootScope) : nav.resolvedPath;
+        String displayPath = nav.resolvedPath.isEmpty() ? "snapshot JSON" : nav.resolvedPath;
 
         String message = "Field '" + seg + "' not found in '" + displayPath + "'";
         List<String> suggestions = buildSuggestions(parent, seg, displayPath);
-        return new ResolutionError(message, lastPath, suggestions);
+        return new ResolutionError(message, suggestions);
     }
 
     private static List<String> buildSuggestions(JsonNode parent, String segment, String nodePath) {
@@ -406,17 +401,5 @@ public final class ExpressionResolver {
         return null;
     }
 
-    private static class NavResult {
-        final JsonNode node;
-        final String resolvedPath;
-        final String failedSegment;
-        final JsonNode parentNode;
-
-        NavResult(JsonNode node, String resolvedPath, String failedSegment, JsonNode parentNode) {
-            this.node = node;
-            this.resolvedPath = resolvedPath;
-            this.failedSegment = failedSegment;
-            this.parentNode = parentNode;
-        }
-    }
+    private record NavResult(JsonNode node, String resolvedPath, String failedSegment, JsonNode parentNode) { }
 }

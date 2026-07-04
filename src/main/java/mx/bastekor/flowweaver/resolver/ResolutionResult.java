@@ -17,7 +17,8 @@ public class ResolutionResult {
     private String expression;
     private String suggested;
     private String value;
-    private long durationMs;
+    private boolean fallback;
+    private String duration;
     private String resolvedPath;
     private ResolutionError error;
 }

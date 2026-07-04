@@ -35,6 +35,7 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
         try {
             final RequestDTO requestDTO = requestDTOMapper.build(businessLogContainer, environment);
             flowWeaverService.trace(requestDTO);
+//            requestDTO.getResolutions().forEach((k,v) -> System.out.println(k + ": " + v));
         } catch (Exception e) {
             log.error(BUSINESS_ERROR, businessLogContainer.getStatus(), businessLogContainer.getCode(), e.getMessage(), e);
         } finally {

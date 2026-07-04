@@ -1,6 +1,7 @@
 package mx.bastekor.flowweaver.functional.microservices.payments_service.service;
 
 import mx.bastekor.flowweaver.annotation.BusinessLog;
+import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.functional.microservices.payments_service.dto.PaymentRequest;
 import mx.bastekor.flowweaver.functional.microservices.payments_service.dto.PaymentResponse;
 import mx.bastekor.flowweaver.functional.microservices.payments_service.gateway.InterbankGateway;
@@ -29,10 +30,19 @@ public class PaymentService {
     @BusinessLog(
             group = "PAYMENTS",
             code = "EXECUTE-PAYMENT",
+            description = "arg[1]",
             defaultDescription = "Ejecución de pago bancario",
-            defaultValue = "Pago procesado exitosamente"
+            defaultValue = "Pago procesado exitosamente",
+            dataOut = {
+                    @DataParam(key = "clientId", value = "request.clientId", defaultValue = "Valor del cliente 1"),
+                    @DataParam(key = "account", value = "request.sourceAccount", defaultValue = "XXXX-XXXX-XXXX-XXXX"),
+                    @DataParam(key = "card", value = "request.targetCard", defaultValue = "YYYY-YYYY-YYYY-YYYY"),
+                    @DataParam(key = "amount", value = "request.amount", defaultValue = "$"),
+                    @DataParam(key = "currency", value = "request.currency", defaultValue = "$$$"),
+                    @DataParam(key = "service", value = "request.serviceId", defaultValue = "paguitos papi"),
+            }
     )
-    public PaymentResponse pay(PaymentRequest request) {
+    public PaymentResponse pay(PaymentRequest request, String message) {
         clientService.validate(request.getClientId());
         accountService.verify(request.getSourceAccount());
         accountService.verifyBalance(request.getSourceAccount(), request.getAmount());
