@@ -3,7 +3,11 @@ package mx.bastekor.flowweaver.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import mx.bastekor.flowweaver.dto.*;
+import mx.bastekor.flowweaver.dto.BusinessLogDTO;
+import mx.bastekor.flowweaver.dto.DataDTO;
+import mx.bastekor.flowweaver.dto.DataParamDTO;
+import mx.bastekor.flowweaver.dto.DataParamsDTO;
+import mx.bastekor.flowweaver.dto.SimpleRequestDTO;
 import mx.bastekor.flowweaver.resolver.ExpressionResolver;
 import mx.bastekor.flowweaver.resolver.ResolutionResult;
 import org.springframework.core.env.Environment;
@@ -15,7 +19,9 @@ import java.util.Map;
 import static java.util.Optional.of;
 import static mx.bastekor.flowweaver.util.Util.normalizeInput;
 import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.trim;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -117,6 +123,9 @@ public final class ResolveHelper {
                                   final String jsonRes,
                                   final String key,
                                   Map<String, ResolutionResult> resolutions) {
+        if (isBlank(expression)) {
+            return trim(expressionDefault);
+        }
         final String normalized = normalizeInput(expression);
         return of(normalized)
                 .filter(input -> input.startsWith("response") || input.startsWith("exception"))
@@ -128,7 +137,8 @@ public final class ResolveHelper {
                                           final String rootScope,
                                           final String expression,
                                           final String expressionDefault,
-                                          final String key, final Map<String, ResolutionResult> resolutions) {
+                                          final String key,
+                                          final Map<String, ResolutionResult> resolutions) {
         ResolutionResult resolutionResult = ExpressionResolver.resolveDetailed(json, rootScope, expression, expressionDefault);
         resolutions.put(key, resolutionResult);
         return defaultIfBlank(resolutionResult.getValue(), expressionDefault);

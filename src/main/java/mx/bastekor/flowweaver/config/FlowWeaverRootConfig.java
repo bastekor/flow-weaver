@@ -18,4 +18,5 @@ import java.util.Map;
 public class FlowWeaverRootConfig {
     private Map<String, BusinessLogDTO> businessLogs;
     private Map<String, AuditTrailDTO> auditTrails;
+    private int maxDepth = 3;
 }

@@ -19,24 +19,33 @@ public class AuditTrailContainer {
 
     @Getter
     private final String id;
-    @Setter @Getter
+    @Setter
+    @Getter
     private String code;
-    @Setter @Getter
+    @Setter
+    @Getter
     private String group;
-    @Setter @Getter
+    @Setter
+    @Getter
     private String correlationId;
-    @Setter @Getter
+    @Setter
+    @Getter
     private String parentCode;
 
-    @Setter @Getter
+    @Setter
+    @Getter
     private AuditTrail auditTrail;
-    @Setter @Getter
+    @Setter
+    @Getter
     private String entrySignature; // firma de entrada del metodo
-    @Setter @Getter
+    @Setter
+    @Getter
     private String exitSignature; // firma de salida del metodo
-    @Setter @Getter
+    @Setter
+    @Getter
     private StatusEnum status;
-    @Setter @Getter
+    @Setter
+    @Getter
     private String response;
 
     public AuditTrailContainer() {
@@ -46,5 +55,12 @@ public class AuditTrailContainer {
 
     public String getDuration() {
         return Util.getDuration(instant, now());
+    }
+
+    public void fillInFields(String groupCode, String parentCode, String correlationId, String code) {
+        this.setGroup(groupCode);
+        this.setParentCode(parentCode);
+        this.setCorrelationId(correlationId);
+        this.setCode(code);
     }
 }

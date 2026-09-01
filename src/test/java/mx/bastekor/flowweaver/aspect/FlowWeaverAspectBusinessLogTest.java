@@ -7,6 +7,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
+import mx.bastekor.flowweaver.config.FlowWeaverRootConfig;
 import mx.bastekor.flowweaver.context.FlowWeaverContext;
 import mx.bastekor.flowweaver.enums.Mode;
 import mx.bastekor.flowweaver.service.IFlowWeaverAspectService;
@@ -22,7 +23,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -61,14 +61,16 @@ class FlowWeaverAspectBusinessLogTest {
     @Mock
     private IFlowWeaverAspectService businessLogAspectService;
 
+    @Mock
+    private FlowWeaverRootConfig flowWeaverRootConfig;
+
     @InjectMocks
     private FlowWeaverAspect aspect;
 
     @BeforeEach
     void setUp() {
 
-        ReflectionTestUtils.setField(aspect, "bool", true);
-        ReflectionTestUtils.setField(aspect, "maxDepth", 5);
+        when(flowWeaverRootConfig.getMaxDepth()).thenReturn(5);
         // Limpiar el contexto antes de cada prueba para evitar interferencias
         FlowWeaverContext.clearCurrentThreadContainer();
         when(joinPoint.getSignature()).thenReturn(methodSignature);

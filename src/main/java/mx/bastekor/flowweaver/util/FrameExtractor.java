@@ -12,38 +12,38 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+
 @Slf4j
 @Component
 public class FrameExtractor {
 
-    private static final int MAX_DEPTH = 5;
-
-    public Map<String, Object> extract(Object obj) {
+    public Map<String, Object> extract(Object obj, int maxDepth) {
         Map<String, Object> result = new LinkedHashMap<>();
-        extractRecursive("", obj, result, 0);
+        this.extractRecursive(EMPTY, obj, result, 0, maxDepth);
         return result;
     }
 
-    private void extractRecursive(String prefix, Object obj, Map<String, Object> result, int depth) {
-        if (obj == null || depth > MAX_DEPTH) return;
+    private void extractRecursive(String prefix, Object obj, Map<String, Object> result, int depth, int maxDepth) {
+        if (obj == null || depth > maxDepth) return;
 
         Class<?> clazz = obj.getClass();
         for (Class<?> c = clazz; c != null && c != Object.class; c = c.getSuperclass()) {
             for (Field field : c.getDeclaredFields()) {
-                if (isSkippable(field)) continue;
+                if (this.isSkippable(field)) continue;
 
                 field.setAccessible(true);
                 try {
                     Object value = field.get(obj);
-                    String key = resolveKey(field);
+                    String key = this.resolveKey(field);
                     String fullKey = prefix.isEmpty() ? key : prefix + "_" + key;
 
                     if (value == null) {
                         result.put(fullKey, null);
                     } else if (isMapType(value.getClass())) {
-                        expandMap(fullKey, (Map<?, ?>) value, result);
+                        this.expandMap(fullKey, (Map<?, ?>) value, result);
                     } else if (isContainerType(value.getClass())) {
-                        extractRecursive(fullKey, value, result, depth + 1);
+                        this.extractRecursive(fullKey, value, result, depth + 1, maxDepth);
                     } else {
                         result.put(fullKey, value);
                     }
@@ -76,7 +76,7 @@ public class FrameExtractor {
     }
 
     private boolean isContainerType(Class<?> type) {
-        return !isLeafType(type);
+        return !this.isLeafType(type);
     }
 
     private boolean isLeafType(Class<?> type) {
@@ -94,10 +94,11 @@ public class FrameExtractor {
     }
 
     private void expandMap(String prefix, Map<?, ?> map, Map<String, Object> result) {
-        if (map == null) return;
-        for (Map.Entry<?, ?> entry : map.entrySet()) {
-            String key = entry.getKey() != null ? entry.getKey().toString() : "null";
-            result.put(prefix + "_" + key, entry.getValue());
+        if (map != null) {
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                String key = entry.getKey() != null ? entry.getKey().toString() : "null";
+                result.put(prefix + "_" + key, entry.getValue());
+            }
         }
     }
 }

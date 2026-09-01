@@ -6,14 +6,17 @@ import lombok.Getter;
 import lombok.ToString;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
+import mx.bastekor.flowweaver.config.FlowWeaverRootConfig;
 import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.enums.Phase;
 import mx.bastekor.flowweaver.enums.StatusEnum;
+import mx.bastekor.flowweaver.handler.FlowWeaverResultHandler;
 import mx.bastekor.flowweaver.mapper.RequestDTOMapper;
 import mx.bastekor.flowweaver.mapper.SafeSnapshotMapper;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
 import mx.bastekor.flowweaver.model.SafeSerializer;
 
+import mx.bastekor.flowweaver.util.FrameExtractor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,12 +52,14 @@ class FlowWeaverAspectServiceTest {
 
     @Mock
     private Environment environment;
-
+    @Mock
+    private FrameExtractor frameExtractor;
     @Mock
     private RequestDTOMapper requestDTOMapper;
-
     @Mock
-    private IFlowWeaverService flowWeaverService;
+    private FlowWeaverRootConfig flowWeaverRootConfig;
+    @Mock
+    private FlowWeaverResultHandler flowWeaverResultHandler;
 
     @InjectMocks
     private FlowWeaverAspectService flowWeaverAspectService;
@@ -62,6 +67,11 @@ class FlowWeaverAspectServiceTest {
     @BeforeEach
     void setUp() {
         when(joinPoint.getSignature()).thenReturn(methodSignature);
+    }
+
+    @BeforeEach
+    void setup() {
+        when(flowWeaverRootConfig.getMaxDepth()).thenReturn(5);
     }
 
     private static String json(String resource) {

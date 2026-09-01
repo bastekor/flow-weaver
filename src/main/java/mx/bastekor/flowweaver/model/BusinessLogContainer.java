@@ -1,17 +1,15 @@
 package mx.bastekor.flowweaver.model;
 
-import java.time.Instant;
-import static java.time.Instant.now;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import static java.util.UUID.randomUUID;
-
 import lombok.Getter;
 import lombok.Setter;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.util.Util;
+
+import java.time.Instant;
+
+import static java.time.Instant.now;
+import static java.util.UUID.randomUUID;
 
 public class BusinessLogContainer {
 
@@ -26,15 +24,18 @@ public class BusinessLogContainer {
     @Getter
     private final String correlationId;
 
-    @Setter @Getter
+    @Setter
+    @Getter
     private BusinessLog businessLog;
-    @Setter @Getter
+    @Setter
+    @Getter
     private String exitSignature;
-    @Setter @Getter
+    @Setter
+    @Getter
     private StatusEnum status;
-    @Setter @Getter
+    @Setter
+    @Getter
     private String response;
-    private final List<AuditTrailContainer> auditTrails;
 
     public BusinessLogContainer(String correlationId, String group, String code) {
         this.instant = now();
@@ -42,28 +43,9 @@ public class BusinessLogContainer {
         this.group = group;
         this.code = code;
         this.correlationId = correlationId;
-        this.auditTrails = new ArrayList<>();
     }
 
     public String getDuration() {
         return Util.getDuration(instant, now());
-    }
-
-    public void addAuditTrail(AuditTrailContainer auditTrail) {
-        auditTrails.add(auditTrail);
-    }
-
-    /**
-     * Obtener todos los AuditTrails (inmutable)
-     */
-    public List<AuditTrailContainer> getAuditTrails() {
-        return Collections.unmodifiableList(auditTrails);
-    }
-
-    /**
-     * Obtener cantidad de AuditTrails registrados
-     */
-    public int getAuditTrailCount() {
-        return auditTrails.size();
     }
 }
