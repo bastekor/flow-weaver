@@ -18,6 +18,8 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+import static mx.bastekor.flowweaver.enums.StatusEnum.EXTERNAL_FAILURE;
+import static mx.bastekor.flowweaver.enums.StatusEnum.INTERNAL_FAILURE;
 import static mx.bastekor.flowweaver.util.Util.getDuration;
 
 @Slf4j
@@ -59,13 +61,18 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
             fields.put("methodDuration", methodDuration);
         } catch (FlowWeaverException e) {
             fields.put("flowWeaverException", e);
-            log.error("Error :: {}", e.getMessage(), e);
+            log.error("Error {} :: {}", INTERNAL_FAILURE, e.getMessage(), e);
         } finally {
             final Instant end = Instant.now();
             // Cuanto tiempo tomo el mapeo de datos
             final String mappedDuration = getDuration(start, end);
             fields.put("mappedDuration", mappedDuration);
         }
-        flowWeaverResultHandler.handle(requestDTO, fields);
+
+        try {
+            flowWeaverResultHandler.handle(requestDTO, fields);
+        } catch (FlowWeaverException e) {
+            log.error("Error {} :: {}", EXTERNAL_FAILURE, e.getMessage(), e);
+        }
     }
 }

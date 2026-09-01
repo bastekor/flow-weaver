@@ -8,14 +8,15 @@ import java.lang.annotation.Target;
 
 /**
  * Anotación utilizada para definir parámetros individuales que serán evaluados
- * como parte del registro de salida de un flujo funcional dentro de la anotación {@link BusinessLog}.
+ * como parte del registro de entrada/salida de un flujo funcional dentro de las anotaciones
+ * {@link BusinessLog} y {@link AuditTrail}.
  * <p>
  * Esta anotación permite especificar claves y expresiones para extraer información
  * desde los argumentos del método interceptado, evaluando primero el valor como una expresión,
  * y en caso de no resolverse, utilizando un valor por defecto.
  * <p>
- * Esta anotación debe ser usada exclusivamente como parte de otra anotación, en este caso dentro de
- * {@link BusinessLog#dataOut()}.
+ * Esta anotación debe ser usada exclusivamente como parte de otra anotación ({@link BusinessLog#dataOut()},
+ * {@link AuditTrail#dataIn()}, {@link AuditTrail#dataOut()}, {@link AuditTrail#dataInOut()}).
  *
  * <p><b>Reglas de resolución:</b></p>
  * <ul>

@@ -3,6 +3,7 @@ package mx.bastekor.flowweaver.util;
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.config.FrameConfig;
 import mx.bastekor.flowweaver.enums.OutputMode;
+import mx.bastekor.flowweaver.exception.FlowWeaverException;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static mx.bastekor.flowweaver.enums.StatusEnum.INTERNAL_ERROR;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 @Slf4j
@@ -55,10 +57,11 @@ public class FrameFormatter {
     private String formatSingleLine(List<Map.Entry<String, Object>> entries, FrameConfig config) {
         // Revisar el escenario en donde sean el mismo valor y revisar la excepción a retornar
         if (config.getEntrySeparator().equals(config.getPairSeparator())) {
-            throw new IllegalArgumentException(
+            throw new FlowWeaverException(
                     "entrySeparator ('" + config.getEntrySeparator()
                             + "') and pairSeparator ('" + config.getPairSeparator()
-                            + "') must differ");
+                            + "') must differ",
+                    INTERNAL_ERROR);
         }
         return entries.stream()
                 .map(e -> e.getKey() + config.getPairSeparator() + this.valueToString(e.getValue()))

@@ -41,10 +41,10 @@ import java.lang.annotation.Target;
  *
  * <p><b>Relación con {@code @BusinessLog}:</b></p>
  * Puede vincularse a una anotación {@code @BusinessLog} mediante el atributo
- * {@code relatedBusinessCode}, facilitando el rastreo unificado de un flujo completo.
+ * {@code parentCode}, facilitando el rastreo unificado de un flujo completo.
  *
  * <p><b>Asignación automática de operación padre:</b></p>
- * Si no se asigna el valor de `relateBusinessLog`, se generará uno por defecto usando la convención:
+ * Si no se asigna el valor de {@code parentCode}, se generará uno por defecto usando la convención:
  * <pre>
  *   {application-name}_class_{className}#methodName
  * </pre>
@@ -58,8 +58,8 @@ import java.lang.annotation.Target;
  * <p><b>Ejemplo de uso:</b></p>
  * <pre>{@code
  * @AuditTrail(
- *   relatedBusinessCode = "CLIENT-CREATE",
- *   operationCode = "client.trx.payId",
+ *   parentCode = "CLIENT-CREATE",
+ *   code = "client.trx.payId",
  *   description = "client.trx.payDesc",
  *   defaultDescription = "Se audita la creación del cliente",
  *   value = "response.status",

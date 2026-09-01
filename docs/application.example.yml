@@ -1,0 +1,87 @@
+# ============================================================================
+# flow-weaver — Ejemplo de configuración (application.yml / application.properties)
+# ----------------------------------------------------------------------------
+# Todas las propiedades de framework viven bajo el prefijo `flow-weaver`.
+# Este archivo es un ejemplo copiable; ajusta los valores a tu caso.
+# Ver documentación detallada en docs/CONFIGURACION.md
+# ============================================================================
+flow-weaver:
+  # Profundidad máxima de anidamiento al serializar la firma de entrada/salida
+  # del método anotado (@BusinessLog / @AuditTrail). Default: 3
+  max-depth: 5
+
+  # --------------------------------------------------------------------------
+  # Mapa de BusinessLog dinámicos. La clave es el `code` del @BusinessLog.
+  # Se usa con mode = DYNAMIC o MERGED.
+  # --------------------------------------------------------------------------
+  business-logs:
+    EXECUTE-PAYMENT:
+      group: PAYMENTS
+      code: EXECUTE-PAYMENT
+      description: arg[1]
+      default-description: Ejecución de pago bancario
+      value: response.message
+      default-value: Pago procesado exitosamente
+      exception: exception.message
+      default-exception: Error en el pago
+      mode: MERGED
+      data-out:
+        - { key: clientId, value: request.clientId, default-value: "Valor del cliente 1" }
+        - { key: account, value: request.sourceAccount, default-value: "XXXX-XXXX-XXXX-XXXX" }
+        - { key: card, value: request.targetCard, default-value: "YYYY-YYYY-YYYY-YYYY" }
+        - { key: amount, value: request.amount, default-value: "$" }
+        - { key: currency, value: request.currency, default-value: "$$$" }
+        - { key: service, value: request.serviceId, default-value: "paguitos papi" }
+
+  # --------------------------------------------------------------------------
+  # Mapa de AuditTrail dinámicos. La clave es el `code` del @AuditTrail
+  # (NO el parentCode/flowCode). Se usa con mode = DYNAMIC o MERGED.
+  # --------------------------------------------------------------------------
+  audit-trails:
+    DEBIT-ACCOUNT:
+      group: PAYMENTS
+      flow-code: EXECUTE-PAYMENT
+      code: DEBIT-ACCOUNT
+      default-description: Aplicando cargo a cuenta de origen
+      default-value: Cargo aplicado correctamente
+      mode: MERGED
+      data-out:
+        - { key: account, value: request.sourceAccount, default-value: "XXXX-XXXX-XXXX-XXXX" }
+
+    CREDIT-ACCOUNT:
+      group: PAYMENTS
+      flow-code: EXECUTE-PAYMENT
+      code: CREDIT-ACCOUNT
+      default-description: Aplicando abono a cuenta destino
+      default-value: Abono aplicado correctamente
+      mode: MERGED
+
+  # --------------------------------------------------------------------------
+  # Configuración del marco (frame) de salida del log generado.
+  # Prefijo: flow-weaver.frame
+  # --------------------------------------------------------------------------
+  frame:
+    # Modo de salida: DUAL_LINE (claves y valores en líneas separadas) o
+    # SINGLE_LINE (pares clave=valor). Default: DUAL_LINE
+    output-mode: DUAL_LINE
+
+    # Separador entre campos. Default: "|"
+    entry-separator: "|"
+
+    # Separador entre clave y valor (solo aplica en SINGLE_LINE). Default: "="
+    pair-separator: "="
+
+    # Omite campos con valor null. Default: false
+    skip-nulls: false
+
+    # Omite campos en blanco (valor vacío o solo espacios). Default: false
+    skip-blanks: false
+
+    # Lista de claves que serán excluidas de la salida.
+    excluded-keys:
+      - appName
+      - appVersion
+
+    # Muestra la sección de errores de resolución (fallback) junto al frame.
+    # Default: false
+    show-errors: true

@@ -39,7 +39,7 @@ import mx.bastekor.flowweaver.enums.Mode;
  * <p><b>Ejemplo de uso:</b></p>
  * <pre>{@code
  * @BusinessLog(
- *   operationCode = "CLIENT-CREATE",
+ *   code = "CLIENT-CREATE",
  *   description = "args[1].description",
  *   defaultDescription = "Se creó un nuevo cliente",
  *   value = "response.status",
