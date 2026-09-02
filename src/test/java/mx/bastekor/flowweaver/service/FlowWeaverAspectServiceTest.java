@@ -7,6 +7,7 @@ import lombok.ToString;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.config.FlowWeaverRootConfig;
+import mx.bastekor.flowweaver.config.FrameConfig;
 import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.enums.Phase;
 import mx.bastekor.flowweaver.enums.StatusEnum;
@@ -36,6 +37,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +61,8 @@ class FlowWeaverAspectServiceTest {
     @Mock
     private FlowWeaverRootConfig flowWeaverRootConfig;
     @Mock
+    private FrameConfig frameConfig;
+    @Mock
     private FlowWeaverResultHandler flowWeaverResultHandler;
 
     @InjectMocks
@@ -72,6 +76,7 @@ class FlowWeaverAspectServiceTest {
     @BeforeEach
     void setup() {
         when(flowWeaverRootConfig.getMaxDepth()).thenReturn(5);
+        when(frameExtractor.extract(any(), anyInt())).thenReturn(new LinkedHashMap<>());
     }
 
     private static String json(String resource) {

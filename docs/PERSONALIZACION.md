@@ -12,8 +12,9 @@ Este documento explica cómo **personalizar la emisión del log** de flow-weaver
   - [3.1 `requestDTO`](#31-requestdto)
   - [3.2 `fields`](#32-fields)
 - [4. Cómo registrar tu propio handler](#4-cómo-registrar-tu-propio-handler)
-- [5. Ejemplo completo](#5-ejemplo-completo)
-- [6. Buenas prácticas](#6-buenas-prácticas)
+- [5. Contrato de estatus para implementadores](#5-contrato-de-estatus-para-implementadores)
+- [6. Ejemplo completo](#6-ejemplo-completo)
+- [7. Buenas prácticas](#7-buenas-prácticas)
 
 ---
 
@@ -23,7 +24,7 @@ La interfaz pública de personalización es:
 
 ```java
 public interface FlowWeaverResultHandler {
-    void handle(RequestDTO requestDTO, Map<String, Object> fields) throws FlowWeaverException;
+    void handle(String methodDuration, String mappedDuration, RequestDTO requestDTO, Map<String, Object> fields) throws FlowWeaverException;
 }
 ```
 
@@ -79,7 +80,7 @@ Este handler se puede **sobreescribir/deshabilitar** con `flow-weaver.frame` (fo
 | (claves del frame) | `Object` | Campos del `RequestDTO` aplanados y sus valores (según `FrameConfig`). |
 | `methodDuration` | `String` | Duración del método interceptado. |
 | `mappedDuration` | `String` | Duración del mapeo de datos. |
-| `flowWeaverException` | `FlowWeaverException` | Presente **solo** si falló la extracción del frame. |
+| `processStatus` | `StatusEnum` | Estatus de procesamiento de flow-weaver (por defecto `INTERNAL_SUCCESS`; en reintentos conserva el estatus de la falla). |
 
 ---
 
@@ -93,7 +94,7 @@ En tu proyecto de consumo, crea una clase `@Component` que implemente la interfa
 @Component
 public class MyResultHandler implements FlowWeaverResultHandler {
     @Override
-    public void handle(RequestDTO requestDTO, Map<String, Object> fields) throws FlowWeaverException {
+    public void handle(String methodDuration, String mappedDuration, RequestDTO requestDTO, Map<String, Object> fields) throws FlowWeaverException {
         // tu lógica
     }
 }
@@ -103,7 +104,23 @@ public class MyResultHandler implements FlowWeaverResultHandler {
 
 ---
 
-## 5. Ejemplo completo
+## 5. Contrato de estatus para implementadores
+
+`StatusEnum` agrupa los estatus por **origen**. Antes de implementar tu handler, entiende quién usa cada grupo:
+
+| Grupo | Quién lo usa | Uso |
+|---|---|---|
+| `SOURCE_*` (`SOURCE_SUCCESS` / `SOURCE_FAILURE`) | El **aspecto** (`FlowWeaverAspect`) | Resultado del método de negocio interceptado. No es responsabilidad del handler. |
+| `INTERNAL_*` (`INTERNAL_SUCCESS` / `INTERNAL_FAILURE` / `INTERNAL_ERROR`) | La **librería** y su `LoggingFlowWeaverResultHandler` | Procesamiento interno: éxito, falla recuperable e invariante de implementación. No es responsabilidad del handler. |
+| `EXTERNAL_*` (`EXTERNAL_SUCCESS` / `EXTERNAL_FAILURE`) | **Tú, el implementador del handler** | Frontera de entrega/persistencia hacia afuera de la librería. **Obligatorios para tu handler.** |
+
+> **Regla:** quien implemente `FlowWeaverResultHandler` **debe** utilizar `EXTERNAL_*`. Los `INTERNAL_*` son responsabilidad interna de la librería y no deben emitirse desde el handler de un consumidor; si tu handler no logra entregar/persistir el resultado, lanza `FlowWeaverException(..., EXTERNAL_FAILURE)`.
+
+`EXTERNAL_SUCCESS` aplica cuando quieres reportar una entrega correcta de forma explícita; `EXTERNAL_FAILURE`, cuando la entrega/persistencia falla. El framework captura ambos y los registra sin romper el flujo del negocio.
+
+---
+
+## 6. Ejemplo completo
 
 Enviar el resultado a un logger estructurado y, además, a un repositorio (seudocódigo de integración):
 
@@ -128,7 +145,7 @@ public class JsonResultHandler implements FlowWeaverResultHandler {
     private final ObjectMapper objectMapper;
 
     @Override
-    public void handle(RequestDTO requestDTO, Map<String, Object> fields) throws FlowWeaverException {
+    public void handle(String methodDuration, String mappedDuration, RequestDTO requestDTO, Map<String, Object> fields) throws FlowWeaverException {
         try {
             // 1. Emite el frame en una sola línea JSON.
             log.info(objectMapper.writeValueAsString(fields));
@@ -147,9 +164,10 @@ public class JsonResultHandler implements FlowWeaverResultHandler {
 
 ---
 
-## 6. Buenas prácticas
+## 7. Buenas prácticas
 
 - **No bloquees el hilo del negocio**: `handle` se invoca en el executor asíncrono, pero aún así mantenlo rápido; el fallo aquí no revierte la transacción del método.
-- **Maneja tus errores**: lanza `FlowWeaverException` con el `StatusEnum` adecuado para que el framework registre el fallo (`EXTERNAL_FAILURE` para la salida y `INTERNAL_FAILURE` para el mapeo).
+- **Usa siempre `EXTERNAL_*` en tu handler** (ver [§5](#5-contrato-de-estatus-para-implementadores)): lanza `FlowWeaverException(..., EXTERNAL_FAILURE)` cuando no puedas entregar/persistir el resultado.
+- **No emitas `INTERNAL_*` desde tu handler**: son de la librería; si los usas, interfieres con su mecanismo de recuperación de reintentos.
 - **Conserva `requestDTO` para el detalle completo** y `fields` para el formato plano/ligero.
 - Si solo quieres cambiar **el formato** (no el destino), usa `flow-weaver.frame.*` en la configuración en lugar de escribir un handler (ver [`CONFIGURACION.md`](./CONFIGURACION.md)).

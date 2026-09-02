@@ -2,7 +2,6 @@ package mx.bastekor.flowweaver.util;
 
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.config.FrameConfig;
-import mx.bastekor.flowweaver.enums.OutputMode;
 import mx.bastekor.flowweaver.exception.FlowWeaverException;
 import org.springframework.stereotype.Component;
 
@@ -11,8 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static mx.bastekor.flowweaver.enums.OutputMode.DUAL_LINE;
 import static mx.bastekor.flowweaver.enums.StatusEnum.INTERNAL_ERROR;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.springframework.util.CollectionUtils.isEmpty;
 
 @Slf4j
 @Component
@@ -24,7 +25,7 @@ public class FrameFormatter {
         entries = this.filterExcluded(entries, config);
         entries = this.filterNullsAndBlanks(entries, config);
 
-        if (config.getOutputMode() == OutputMode.DUAL_LINE) {
+        if (config.getOutputMode() == DUAL_LINE) {
             return this.formatDualLine(entries, config);
         }
         return this.formatSingleLine(entries, config);
@@ -32,7 +33,7 @@ public class FrameFormatter {
 
     private List<Map.Entry<String, Object>> filterExcluded(
             List<Map.Entry<String, Object>> entries, FrameConfig config) {
-        if (config.getExcludedKeys() == null || config.getExcludedKeys().isEmpty()) {
+        if (isEmpty(config.getExcludedKeys())) {
             return entries;
         }
         return entries.stream()

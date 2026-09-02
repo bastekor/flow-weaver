@@ -4,12 +4,17 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.config.FrameConfig;
 import mx.bastekor.flowweaver.dto.RequestDTO;
+import mx.bastekor.flowweaver.exception.FlowWeaverException;
 import mx.bastekor.flowweaver.resolver.ResolutionError;
 import mx.bastekor.flowweaver.util.FrameFormatter;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+import static java.util.Objects.isNull;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.FIELDS_IS_NULL_OR_EMPTY;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.REQUEST_ISNULL;
+import static mx.bastekor.flowweaver.enums.StatusEnum.INTERNAL_FAILURE;
 import static org.apache.commons.lang3.StringUtils.LF;
 import static org.springframework.util.CollectionUtils.isEmpty;
 
@@ -22,24 +27,35 @@ public class LoggingFlowWeaverResultHandler implements FlowWeaverResultHandler {
     private final FrameFormatter frameFormatter;
 
     @Override
-    public void handle(final RequestDTO requestDTO, final Map<String, Object> fields) {
+    public void handle(final String methodDuration, final String mappedDuration,
+                       final RequestDTO requestDTO, final Map<String, Object> fields) throws FlowWeaverException {
+
+        if (isNull(requestDTO)) {
+            throw new FlowWeaverException(REQUEST_ISNULL, INTERNAL_FAILURE);
+        }
+
+        if (isEmpty(fields)) {
+            throw new FlowWeaverException(FIELDS_IS_NULL_OR_EMPTY, INTERNAL_FAILURE);
+        }
+
+        fields.put("methodDuration", methodDuration);
+        fields.put("mappedDuration", mappedDuration);
+
+        final String frame = frameFormatter.format(fields, frameConfig);
+
         final String hashTag = "#".repeat(50);
         final String enDash = "-".repeat(50);
-        final String frame = frameFormatter.format(fields, frameConfig);
         final String requestId = "%s|%s|%s".formatted(requestDTO.getId(), requestDTO.getGroup(), requestDTO.getCode());
         /*
-        Result...
+         - Flow Weaver Result(uuid|groupCode|code)...
         ##################################################
         keyA|keyB|keyC
         valueA|valueB|valueC
-        ##################################################
-        Errors...
-            - keyA = messageB
-                * suggestion1
-                * suggestionN
-            - keyB = messageB
-                * suggestion1
-                * suggestionN
+        --------------------------------------------------
+         - Flow Weaver Errors(uuid|groupCode|code)...
+            * key=keyA, message=messageB
+                - suggestion=suggestion1
+                - suggestion=suggestionN
         ##################################################
          */
 

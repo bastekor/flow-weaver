@@ -3,6 +3,7 @@ package mx.bastekor.flowweaver.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.config.FlowWeaverRootConfig;
+import mx.bastekor.flowweaver.config.FrameConfig;
 import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.exception.FlowWeaverException;
 import mx.bastekor.flowweaver.handler.FlowWeaverResultHandler;
@@ -15,64 +16,113 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 
-import static mx.bastekor.flowweaver.enums.StatusEnum.EXTERNAL_FAILURE;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.FIELDS_IS_NULL_OR_EMPTY;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.PROCESS_STATUS;
+import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.REQUEST_ISNULL;
+import static mx.bastekor.flowweaver.enums.OutputMode.DUAL_LINE;
+import static mx.bastekor.flowweaver.enums.StatusEnum.INTERNAL_ERROR;
 import static mx.bastekor.flowweaver.enums.StatusEnum.INTERNAL_FAILURE;
+import static mx.bastekor.flowweaver.enums.StatusEnum.INTERNAL_SUCCESS;
 import static mx.bastekor.flowweaver.util.Util.getDuration;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class FlowWeaverAspectService implements IFlowWeaverAspectService {
+    private static final int MAX_RECOVERIES = 3;
+    private static final String ERROR_MESSAGE = "Error '{}' no manejado, message={}";
 
     private final Environment environment;
+    private final FrameConfig frameConfig;
     private final FrameExtractor frameExtractor;
     private final RequestDTOMapper requestDTOMapper;
     private final FlowWeaverRootConfig flowWeaverRootConfig;
     private final FlowWeaverResultHandler flowWeaverResultHandler;
 
-
     @Override
     @Async("flowWeaverExecutor")
     public void processBusinessLog(final BusinessLogContainer businessLogContainer) {
-        // Cuanto duro el metodo interceptado
         final String methodDuration = businessLogContainer.getDuration();
-        final Instant start = Instant.now();
-        final RequestDTO requestDTO = requestDTOMapper.build(businessLogContainer, environment);
-        this.sendHandler(start, methodDuration, requestDTO);
+        this.sendHandler(methodDuration, businessLogContainer);
     }
 
     @Override
     @Async("flowWeaverExecutor")
     public void processAuditTrail(final AuditTrailContainer auditTrailContainer) {
-        // Cuanto tiempo duro el metodo interceptado...
         final String methodDuration = auditTrailContainer.getDuration();
-        final Instant start = Instant.now();
-        final RequestDTO requestDTO = requestDTOMapper.build(auditTrailContainer, environment);
-        this.sendHandler(start, methodDuration, requestDTO);
+        this.sendHandler(methodDuration, auditTrailContainer);
     }
 
-    private void sendHandler(final Instant start, final String methodDuration, final RequestDTO requestDTO) {
-        Map<String, Object> fields = new HashMap<>();
-        try {
-            fields = frameExtractor.extract(requestDTO, flowWeaverRootConfig.getMaxDepth());
-            fields.put("methodDuration", methodDuration);
-        } catch (FlowWeaverException e) {
-            fields.put("flowWeaverException", e);
-            log.error("Error {} :: {}", INTERNAL_FAILURE, e.getMessage(), e);
-        } finally {
-            final Instant end = Instant.now();
-            // Cuanto tiempo tomo el mapeo de datos
-            final String mappedDuration = getDuration(start, end);
-            fields.put("mappedDuration", mappedDuration);
+    private void sendHandler(final String methodDuration, final Object object) {
+        final Instant start = Instant.now();
+
+        RequestDTO requestDTO;
+        if (object instanceof BusinessLogContainer) {
+            requestDTO = requestDTOMapper.build((BusinessLogContainer) object, environment);
+        } else {
+            requestDTO = requestDTOMapper.build((AuditTrailContainer) object, environment);
         }
 
-        try {
-            flowWeaverResultHandler.handle(requestDTO, fields);
-        } catch (FlowWeaverException e) {
-            log.error("Error {} :: {}", EXTERNAL_FAILURE, e.getMessage(), e);
+        // Retorna mapa vacío si no encuentra datos a extraer
+        Map<String, Object> fields = frameExtractor.extract(requestDTO, flowWeaverRootConfig.getMaxDepth());
+
+        boolean bool = true;
+        int count = 0;
+        while (bool && count <= MAX_RECOVERIES) {
+            final String mappedDuration = getDuration(start, Instant.now());
+            try {
+                // Solo la primera vez es correcta, las demás son "fallidas" o "erroneas"
+                if (count == 0) {
+                    fields.put(PROCESS_STATUS, INTERNAL_SUCCESS);
+                }
+                flowWeaverResultHandler.handle(methodDuration, mappedDuration, requestDTO, fields);
+                bool = false;
+            } catch (FlowWeaverException e) {
+                count++;
+                log.error("Error :: {}, message={}", e.getStatus(), e.getMessage());
+                fields.put(PROCESS_STATUS, e.getStatus());
+
+                if (e.getStatus() != null && e.getMessage() != null) {
+                    if (e.getStatus().equals(INTERNAL_FAILURE)) {
+                        if (e.getMessage().equals(REQUEST_ISNULL)) {
+                            requestDTO = new RequestDTO();
+                            requestDTO.setId("ID_ERR#");
+                            requestDTO.setGroup("GC_ERR#");
+                            requestDTO.setCode("C_ERR#");
+                        } else if (e.getMessage().equals(FIELDS_IS_NULL_OR_EMPTY)) {
+                            fields.put(PROCESS_STATUS, e.getStatus());
+                        } else {
+                            log.error(ERROR_MESSAGE, INTERNAL_FAILURE, e.getMessage(), e);
+                            bool = false;
+                        }
+                    } else if (e.getStatus().equals(INTERNAL_ERROR)) {
+                        if (e.getMessage().contains("entrySeparator ('")) {
+                            frameConfig.setOutputMode(DUAL_LINE);
+                            frameConfig.setEntrySeparator("|");
+                            frameConfig.setPairSeparator("=");
+                            log.warn("Autocorrección del frameConfig: separadores idénticos no válidos en SINGLE_LINE; se restituye outputMode={}, entrySeparator='{}', pairSeparator='{}'", DUAL_LINE, "|", "=");
+                        } else {
+                            log.error(ERROR_MESSAGE, INTERNAL_ERROR, e.getMessage(), e);
+                            bool = false;
+                        }
+                    } else {
+                        log.error(ERROR_MESSAGE, e.getStatus(), e.getMessage(), e);
+                        bool = false;
+                    }
+                } else {
+                    log.error(ERROR_MESSAGE, "(1)", "La excepción no cuenta con información, se ha lanzado sin motivo de uso", e);
+                    bool = false;
+                }
+            } catch (Exception ex) {
+                log.error(ERROR_MESSAGE, "(2)", ex.getMessage(), ex);
+                bool = false;
+            }
+        }
+
+        if (bool) {
+            log.error("Se agotaron los {} reintentos; no se pudo invocar al FlowWeaverResultHandler.", MAX_RECOVERIES);
         }
     }
 }
