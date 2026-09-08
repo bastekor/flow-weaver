@@ -8,6 +8,7 @@ import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.config.FlowWeaverRootConfig;
 import mx.bastekor.flowweaver.config.FrameConfig;
+import mx.bastekor.flowweaver.dto.BusinessLogDTO;
 import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.enums.Phase;
 import mx.bastekor.flowweaver.enums.StatusEnum;
@@ -99,7 +100,9 @@ class FlowWeaverAspectServiceTest {
         when(joinPoint.getArgs()).thenReturn(new Object[]{"Paguitos NU", 150.0, "5234123443219876", "55443456789988987654"});
 
         String uuid = UUID.randomUUID().toString();
-        when(requestDTOMapper.build(any(BusinessLogContainer.class), any(Environment.class)))
+        when(requestDTOMapper.resolveBusinessLog(any(BusinessLogContainer.class)))
+                .thenAnswer(invocation -> new BusinessLogDTO());
+        when(requestDTOMapper.build(any(BusinessLogContainer.class), any(BusinessLogDTO.class)))
                 .thenAnswer(invocation -> {
                     RequestDTO dto = new RequestDTO();
                     dto.setId(uuid);

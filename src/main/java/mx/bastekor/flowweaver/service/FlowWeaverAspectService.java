@@ -4,14 +4,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.config.FlowWeaverRootConfig;
 import mx.bastekor.flowweaver.config.FrameConfig;
+import mx.bastekor.flowweaver.dto.AuditTrailDTO;
 import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.exception.FlowWeaverException;
 import mx.bastekor.flowweaver.handler.FlowWeaverResultHandler;
 import mx.bastekor.flowweaver.mapper.RequestDTOMapper;
 import mx.bastekor.flowweaver.model.AuditTrailContainer;
 import mx.bastekor.flowweaver.model.BusinessLogContainer;
+import mx.bastekor.flowweaver.model.FlowWeaverRs;
 import mx.bastekor.flowweaver.util.FrameExtractor;
-import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +26,9 @@ import static mx.bastekor.flowweaver.enums.OutputMode.DUAL_LINE;
 import static mx.bastekor.flowweaver.enums.StatusEnum.INTERNAL_ERROR;
 import static mx.bastekor.flowweaver.enums.StatusEnum.INTERNAL_FAILURE;
 import static mx.bastekor.flowweaver.enums.StatusEnum.INTERNAL_SUCCESS;
+import static mx.bastekor.flowweaver.mapper.SafeSnapshotMapper.toMethodSnapshot;
 import static mx.bastekor.flowweaver.util.Util.getDuration;
+import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 
 @Slf4j
 @Service
@@ -34,7 +37,6 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
     private static final int MAX_RECOVERIES = 3;
     private static final String ERROR_MESSAGE = "Error '{}' no manejado, message={}";
 
-    private final Environment environment;
     private final FrameConfig frameConfig;
     private final FrameExtractor frameExtractor;
     private final RequestDTOMapper requestDTOMapper;
@@ -58,26 +60,37 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
     private void sendHandler(final String methodDuration, final Object object) {
         final Instant start = Instant.now();
 
-        RequestDTO requestDTO;
-        if (object instanceof BusinessLogContainer) {
-            requestDTO = requestDTOMapper.build((BusinessLogContainer) object, environment);
-        } else {
-            requestDTO = requestDTOMapper.build((AuditTrailContainer) object, environment);
+        final FlowWeaverRs rs = new FlowWeaverRs();
+
+        if (object instanceof BusinessLogContainer container) {
+            rs.setMethodSignature(container.getExitSignature());
+            rs.setMethodResponse(container.getResponse());
+            rs.setAnnotationDTO(requestDTOMapper.resolveBusinessLog(container));
+            rs.setRequestDTO(requestDTOMapper.build(container, rs.getAnnotationDTO()));
         }
 
+        if (object instanceof AuditTrailContainer container) {
+            rs.setMethodSignature(defaultIfBlank(container.getEntrySignature(), container.getExitSignature()));
+            rs.setMethodResponse(container.getResponse());
+            rs.setAnnotationDTO(requestDTOMapper.resolveAuditTrail(container));
+            rs.setRequestDTO(requestDTOMapper.build(container, (AuditTrailDTO) rs.getAnnotationDTO()));
+        }
         // Retorna mapa vacío si no encuentra datos a extraer
-        Map<String, Object> fields = frameExtractor.extract(requestDTO, flowWeaverRootConfig.getMaxDepth());
+        Map<String, Object> fields = frameExtractor.extract(rs.getRequestDTO(), flowWeaverRootConfig.getMaxDepth());
+        rs.setFields(fields);
+
+        rs.setMethodSnapshotDTO(toMethodSnapshot(rs.getMethodSignature(), rs.getMethodResponse(), methodDuration));
 
         boolean bool = true;
         int count = 0;
         while (bool && count <= MAX_RECOVERIES) {
-            final String mappedDuration = getDuration(start, Instant.now());
+            rs.setMappedDuration(getDuration(start, Instant.now()));
             try {
                 // Solo la primera vez es correcta, las demás son "fallidas" o "erroneas"
                 if (count == 0) {
                     fields.put(PROCESS_STATUS, INTERNAL_SUCCESS);
                 }
-                flowWeaverResultHandler.handle(methodDuration, mappedDuration, requestDTO, fields);
+                flowWeaverResultHandler.handle(rs);
                 bool = false;
             } catch (FlowWeaverException e) {
                 count++;
@@ -87,12 +100,13 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
                 if (e.getStatus() != null && e.getMessage() != null) {
                     if (e.getStatus().equals(INTERNAL_FAILURE)) {
                         if (e.getMessage().equals(REQUEST_ISNULL)) {
-                            requestDTO = new RequestDTO();
-                            requestDTO.setId("ID_ERR#");
-                            requestDTO.setGroup("GC_ERR#");
-                            requestDTO.setCode("C_ERR#");
+                            rs.setRequestDTO(new RequestDTO());
+                            rs.getRequestDTO().setId("ID_ERR#");
+                            rs.getRequestDTO().setGroup("GC_ERR#");
+                            rs.getRequestDTO().setCode("C_ERR#");
                         } else if (e.getMessage().equals(FIELDS_IS_NULL_OR_EMPTY)) {
                             fields.put(PROCESS_STATUS, e.getStatus());
+                            rs.setFields(fields);
                         } else {
                             log.error(ERROR_MESSAGE, INTERNAL_FAILURE, e.getMessage(), e);
                             bool = false;

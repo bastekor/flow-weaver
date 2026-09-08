@@ -35,6 +35,9 @@ public abstract class RequestDTOMapper {
     @Autowired
     private UtilMapper utilMapper;
 
+    @Autowired
+    private Environment environment;
+
     @Mapping(target = "id", source = "dto.correlationId")
     @Mapping(target = "group", source = "dto.group")
     @Mapping(target = "code", source = "dto.code")
@@ -55,32 +58,30 @@ public abstract class RequestDTOMapper {
     @Mapping(target = "phase", ignore = true)
     protected abstract RequestDTO map(BusinessLogDTO dto, String jsonReq, String jsonRes, StatusEnum status, Map<String, ResolutionResult> resolutions);
 
-    public RequestDTO build(final BusinessLogContainer container, final Environment env) {
-        BusinessLogDTO dto = this.resolveBusinessLog(container);
+    public RequestDTO build(final BusinessLogContainer container, final BusinessLogDTO dto) {
         if (dto == null) return null;
         dto.setCorrelationId(container.getCorrelationId());
         Map<String, ResolutionResult> resolutions = new HashMap<>();
         RequestDTO requestDTO = map(dto, container.getExitSignature(), container.getResponse(), container.getStatus(), resolutions);
         requestDTO.setResolutions(resolutions);
-        fillInfrastructure(requestDTO, env);
+        fillInfrastructure(requestDTO);
         requestDTO.setPhase(EXIT);
         return requestDTO;
     }
 
-    public RequestDTO build(final AuditTrailContainer container, final Environment env) {
-        AuditTrailDTO dto = this.resolveAuditTrail(container);
+    public RequestDTO build(final AuditTrailContainer container, final AuditTrailDTO dto) {
         if (dto == null) return null;
         dto.setCorrelationId(container.getCorrelationId());
         String jsonReq = defaultIfBlank(container.getEntrySignature(), container.getExitSignature());
         Map<String, ResolutionResult> resolutions = new HashMap<>();
         RequestDTO requestDTO = map(dto, jsonReq, container.getResponse(), container.getStatus(), resolutions);
         requestDTO.setResolutions(resolutions);
-        fillInfrastructure(requestDTO, env);
+        fillInfrastructure(requestDTO);
         requestDTO.setPhase(container.getResponse() == null ? ENTRY : EXIT);
         return requestDTO;
     }
 
-    private BusinessLogDTO resolveBusinessLog(final BusinessLogContainer container) {
+    public BusinessLogDTO resolveBusinessLog(final BusinessLogContainer container) {
         return switch (container.getBusinessLog().mode()) {
             case STATIC -> createBusinessLogDTO(container);
             case DYNAMIC -> ofNullable(config.getBusinessLogs())
@@ -96,7 +97,7 @@ public abstract class RequestDTOMapper {
         };
     }
 
-    private AuditTrailDTO resolveAuditTrail(final AuditTrailContainer container) {
+    public AuditTrailDTO resolveAuditTrail(final AuditTrailContainer container) {
         return switch (container.getAuditTrail().mode()) {
             case STATIC -> createAuditTrailDTO(container);
             case DYNAMIC -> ofNullable(config.getAuditTrails())
@@ -112,9 +113,9 @@ public abstract class RequestDTOMapper {
         };
     }
 
-    private void fillInfrastructure(final RequestDTO requestDTO, final Environment env) {
-        ResolveHelper.fillAppInfo(requestDTO, env);
-        ResolveHelper.fillInfrastructureInfo(requestDTO, env);
+    private void fillInfrastructure(final RequestDTO requestDTO) {
+        ResolveHelper.fillAppInfo(requestDTO, environment);
+        ResolveHelper.fillInfrastructureInfo(requestDTO, environment);
         ResolveHelper.getHostNameAndIpAddress(requestDTO);
     }
 }

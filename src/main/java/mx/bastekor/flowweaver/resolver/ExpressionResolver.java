@@ -8,7 +8,10 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.time.Instant.now;
 import static mx.bastekor.flowweaver.util.Util.getDuration;
@@ -58,6 +61,99 @@ public final class ExpressionResolver {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * Deserializa un nodo JSON a un objeto tipado, {@code null}-safe.
+     * <p>
+     * Navega al nodo indicado por {@code scope} (por ejemplo {@code "response"})
+     * dentro del snapshot y convierte su contenido a la clase {@code type} con
+     * {@link ObjectMapper#treeToValue(JsonNode, Class)}. Si el nodo no existe,
+     * el JSON es inválido o la conversión falla, retorna {@code null} sin lanzar.
+     *
+     * @param jsonSnapshot snapshot JSON que contiene el nodo.
+     * @param scope        ruta del nodo a convertir (ej. {@code "response"}).
+     * @param type         clase objetivo.
+     * @return objeto tipado, o {@code null} si no es posible.
+     */
+    public static <T> T resolveTyped(String jsonSnapshot, String scope, Class<T> type) {
+        if (jsonSnapshot == null || type == null) {
+            return null;
+        }
+        try {
+            JsonNode root = MAPPER.readTree(jsonSnapshot);
+            JsonNode target = resolveScope(root, scope);
+            if (target == null || target.isNull() || target.isMissingNode()) {
+                return null;
+            }
+            return MAPPER.treeToValue(target, type);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Convierte un nodo de objeto del snapshot en un {@link Map} plano, {@code null}-safe.
+     * <p>
+     * Pensado para extraer campos de una sola capa (ej. {@code _fields} de la
+     * firma del método). Los nodos hoja se convierten a sus valores nativos
+     * (String, número, booleano); los objetos anidados a {@link Map} y los
+     * arrays a {@link List}.
+     *
+     * @param jsonSnapshot snapshot JSON que contiene el nodo.
+     * @param scope        ruta del nodo de objeto a convertir.
+     * @return {@link Map} con los campos del nodo, o {@code null} si no existe.
+     */
+    public static Map<String, Object> resolveFields(String jsonSnapshot, String scope) {
+        if (jsonSnapshot == null) {
+            return null;
+        }
+        try {
+            JsonNode root = MAPPER.readTree(jsonSnapshot);
+            JsonNode target = resolveScope(root, scope);
+            if (target == null || !target.isObject()) {
+                return null;
+            }
+            Map<String, Object> map = new LinkedHashMap<>();
+            Iterator<Map.Entry<String, JsonNode>> it = target.fields();
+            while (it.hasNext()) {
+                Map.Entry<String, JsonNode> entry = it.next();
+                map.put(entry.getKey(), toNative(entry.getValue()));
+            }
+            return map.isEmpty() ? null : map;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static Object toNative(final JsonNode node) {
+        if (node == null || node.isNull() || node.isMissingNode()) {
+            return null;
+        }
+        if (node.isTextual()) {
+            return node.asText();
+        }
+        if (node.isNumber()) {
+            return node.numberValue();
+        }
+        if (node.isBoolean()) {
+            return node.asBoolean();
+        }
+        if (node.isArray()) {
+            List<Object> list = new ArrayList<>(node.size());
+            node.forEach(child -> list.add(toNative(child)));
+            return list;
+        }
+        if (node.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> it = node.fields();
+            Map<String, Object> map = new LinkedHashMap<>();
+            while (it.hasNext()) {
+                Map.Entry<String, JsonNode> entry = it.next();
+                map.put(entry.getKey(), toNative(entry.getValue()));
+            }
+            return map;
+        }
+        return node.asText();
     }
 
     public static ResolutionResult resolveDetailed(String jsonSnapshot, String expression) {

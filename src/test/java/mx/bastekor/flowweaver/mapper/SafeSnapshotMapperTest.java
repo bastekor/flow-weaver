@@ -3,8 +3,10 @@ package mx.bastekor.flowweaver.mapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
+import mx.bastekor.flowweaver.dto.MethodSnapshotDTO;
 import mx.bastekor.flowweaver.model.SafeSerializer;
 import mx.bastekor.flowweaver.resolver.ExpressionResolver;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -21,6 +23,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -231,6 +234,110 @@ class SafeSnapshotMapperTest {
     }
 
     // ===================================================================
+    //  unmapArgs — inverso de mapArgs: nombreLiteral -> valor
+    // ===================================================================
+
+    @Test
+    void unmapArgs_returnsNameToValueMap() throws Exception {
+        Method method = TestService.class.getMethod("process", String.class, Person.class);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getSignature()).thenReturn(methodSignature);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{"ABC", new Person("Juan", "juan@test.com", new Money("MXN", java.math.BigDecimal.valueOf(200)))});
+
+        String json = SafeSnapshotMapper.mapArgs(joinPoint, 5);
+        Map<String, Object> args = SafeSnapshotMapper.unmapArgs(json);
+
+        assertNotNull(args);
+        assertTrue(!args.containsKey("args0") && !args.containsKey("args1"),
+                "No debe contener claves argsN, pero fue: " + args.keySet());
+        assertEquals("ABC", args.get("code"));
+        assertEquals("Juan", ((Map<?, ?>) args.get("person")).get("name"));
+        assertEquals("MXN", ((Map<?, ?>) ((Map<?, ?>) args.get("person")).get("amount")).get("currency"));
+    }
+
+    @Test
+    void unmapArgs_isNullSafe() {
+        assertNull(SafeSnapshotMapper.unmapArgs(null));
+        assertNull(SafeSnapshotMapper.unmapArgs("{ no válido"));
+        assertNull(SafeSnapshotMapper.unmapArgs("{\"_fields\": null}"));
+    }
+
+    // ===================================================================
+    //  unmapObject — inverso de mapObject: POJO reconstruido
+    // ===================================================================
+
+    @Test
+    void unmapObject_response_reconstructsPojo() {
+        String json = SafeSnapshotMapper.mapObject(new ResultDto("APPROVED", "AUTH-1"), 5);
+        ResultDto result = SafeSnapshotMapper.unmapObject(json, ResultDto.class);
+
+        assertNotNull(result);
+        assertEquals("APPROVED", result.getStatus());
+        assertEquals("AUTH-1", result.getCode());
+    }
+
+    @Test
+    void unmapObject_exception_returnsNull() {
+        String json = SafeSnapshotMapper.mapObject(new RuntimeException("Algo salió mal"), 5);
+        assertNull(SafeSnapshotMapper.unmapObject(json, ResultDto.class));
+    }
+
+    @Test
+    void unmapObject_isNullSafe() {
+        assertNull(SafeSnapshotMapper.unmapObject(null, ResultDto.class));
+        assertNull(SafeSnapshotMapper.unmapObject("{\"response\": {}}", null));
+        assertNull(SafeSnapshotMapper.unmapObject("{ no válido", ResultDto.class));
+    }
+
+    // ===================================================================
+    //  toMethodSignature — deconstrucción completa al POJO de la firma
+    // ===================================================================
+
+    @Test
+    void toMethodSignature_success_assemblesPojo() throws Exception {
+        Method method = TestService.class.getMethod("getResult", String.class);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getSignature()).thenReturn(methodSignature);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{"R1"});
+
+        String mapArgsJson = SafeSnapshotMapper.mapArgs(joinPoint, 5);
+        String mapObjectJson = SafeSnapshotMapper.mapObject(new ResultDto("OK", "AUTH-7"), 5);
+
+        MethodSnapshotDTO<ResultDto> signature =
+                SafeSnapshotMapper.toMethodSnapshot(mapArgsJson, mapObjectJson, "12ms");
+
+        assertNotNull(signature);
+        assertEquals("mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$TestService", signature.getClassName());
+        assertEquals("getResult", signature.getMethodName());
+        assertEquals("mx.bastekor.flowweaver.mapper.SafeSnapshotMapperTest$ResultDto", signature.getReturnType());
+        assertEquals("12ms", signature.getMethodDuration());
+        assertEquals(false, signature.isException());
+        assertEquals("R1", signature.getArgs().get("id"));
+        assertNotNull(signature.getResponse());
+        assertEquals("OK", signature.getResponse().getStatus());
+        assertEquals("AUTH-7", signature.getResponse().getCode());
+    }
+
+    @Test
+    void toMethodSignature_exception_setsFlagAndNullResponse() throws Exception {
+        Method method = TestService.class.getMethod("getResult", String.class);
+        when(methodSignature.getMethod()).thenReturn(method);
+        when(joinPoint.getSignature()).thenReturn(methodSignature);
+        when(joinPoint.getArgs()).thenReturn(new Object[]{"R2"});
+
+        String mapArgsJson = SafeSnapshotMapper.mapArgs(joinPoint, 5);
+        String mapObjectJson = SafeSnapshotMapper.mapObject(new RuntimeException("Saldo insuficiente"), 5);
+
+        MethodSnapshotDTO<ResultDto> signature =
+                SafeSnapshotMapper.toMethodSnapshot(mapArgsJson, mapObjectJson, "3ms");
+
+        assertNotNull(signature);
+        assertEquals("getResult", signature.getMethodName());
+        assertEquals(true, signature.isException());
+        assertNull(signature.getResponse());
+    }
+
+    // ===================================================================
     //  Helper — construye JSON en el mismo formato que mapArgs
     // ===================================================================
 
@@ -271,6 +378,11 @@ class SafeSnapshotMapperTest {
         public String placeOrder(String orderId, Person customer, String notes) {
             return "OK";
         }
+
+        @BusinessLog
+        public ResultDto getResult(String id) {
+            return new ResultDto("OK", id);
+        }
     }
 
     @Getter
@@ -288,6 +400,21 @@ class SafeSnapshotMapperTest {
     static class Money {
         private String currency;
         private java.math.BigDecimal amount;
+    }
+
+    @Getter
+    @Setter
+    static class ResultDto {
+        private String status;
+        private String code;
+
+        public ResultDto() {
+        }
+
+        public ResultDto(String status, String code) {
+            this.status = status;
+            this.code = code;
+        }
     }
 
     @Getter

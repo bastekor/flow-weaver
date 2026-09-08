@@ -2,10 +2,14 @@ package mx.bastekor.flowweaver.mapper;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NoArgsConstructor;
 import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
+import mx.bastekor.flowweaver.dto.MethodSnapshotDTO;
+import mx.bastekor.flowweaver.resolver.ExpressionResolver;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
@@ -13,12 +17,14 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static mx.bastekor.flowweaver.model.SafeSerializer.rawValue;
 import static mx.bastekor.flowweaver.model.SafeSerializer.safeValue;
+import static mx.bastekor.flowweaver.resolver.ExpressionResolver.resolve;
 
 @NoArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 public final class SafeSnapshotMapper {
@@ -27,6 +33,7 @@ public final class SafeSnapshotMapper {
 
     static {
         MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     /**
@@ -84,6 +91,121 @@ public final class SafeSnapshotMapper {
             return "{\"error\": \"Failed to serialize object: " + e.getMessage() + "\"}";
         } catch (Exception e) {
             return "{\"error\": \"Unexpected error: " + e.getMessage() + "\"}";
+        }
+    }
+
+    /**
+     * Operación inversa de {@link #mapArgs(ProceedingJoinPoint, int)}: reconstruye
+     * los argumentos del método desde el snapshot JSON de la firma.
+     * <p>
+     * Devuelve un mapa {@code nombreLiteral -> valor} con los tipos naturales de
+     * los datos (String, número, booleano, lista, mapa). Los valores se toman del
+     * nodo {@code _fields}, excluyendo las claves {@code argsN}. {@code null}-safe.
+     *
+     * @param mapArgsJson snapshot JSON generado por {@code mapArgs}.
+     * @return mapa nombre -> valor, o {@code null} si no hay argumentos o el JSON no es válido.
+     */
+    public static Map<String, Object> unmapArgs(final String mapArgsJson) {
+        if (mapArgsJson == null) {
+            return null;
+        }
+        try {
+            JsonNode root = MAPPER.readTree(mapArgsJson);
+            JsonNode fields = root == null ? null : root.get("_fields");
+            if (fields == null || !fields.isObject()) {
+                return null;
+            }
+            Map<String, Object> args = new LinkedHashMap<>();
+            Iterator<Map.Entry<String, JsonNode>> it = fields.fields();
+            while (it.hasNext()) {
+                Map.Entry<String, JsonNode> entry = it.next();
+                if (entry.getKey().matches("args\\d+")) {
+                    continue;
+                }
+                args.put(entry.getKey(), MAPPER.treeToValue(entry.getValue(), Object.class));
+            }
+            return args.isEmpty() ? null : args;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Operación inversa de {@link #mapObject(Object, int)}: reconstruye el objeto de
+     * respuesta tipado desde el snapshot JSON de salida.
+     * <p>
+     * Requiere {@code responseType} porque el snapshot de salida no conserva el
+     * FQCN del objeto (solo {@code mapArgs} guarda {@code _returnType}). Devuelve
+     * {@code null} si el nodo {@code response} no existe (por ejemplo cuando se
+     * serializó una excepción), el tipo es {@code null} o la conversión falla.
+     *
+     * @param mapObjectJson snapshot JSON generado por {@code mapObject}.
+     * @param responseType  clase objetivo del objeto de respuesta.
+     * @return POJO reconstruido, o {@code null}.
+     */
+    public static <T> T unmapObject(final String mapObjectJson, final Class<T> responseType) {
+        if (mapObjectJson == null || responseType == null) {
+            return null;
+        }
+        try {
+            JsonNode root = MAPPER.readTree(mapObjectJson);
+            JsonNode response = root == null ? null : root.get("response");
+            if (response == null || response.isNull() || response.isMissingNode()) {
+                return null;
+            }
+            return MAPPER.treeToValue(response, responseType);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Construye la firma del método (POJO) a partir de los snapshots JSON de entrada
+     * y salida, haciendo la "deconstrucción" inversa a {@code mapArgs}/{@code mapObject}
+     * y reutilizando {@link ExpressionResolver#resolve(String, String, String)} para
+     * los campos escalares ({@code _type}, {@code _method}, {@code _returnType}).
+     * {@code null}-safe: campos no reconstruibles quedan en {@code null} sin lanzar.
+     *
+     * @param mapArgsJson    snapshot JSON de la firma del método.
+     * @param mapObjectJson  snapshot JSON del resultado (response o exception).
+     * @param methodDuration duración del método anotado.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> MethodSnapshotDTO<T> toMethodSnapshot(final String mapArgsJson, final String mapObjectJson,
+                                                            final String methodDuration) {
+        final MethodSnapshotDTO<T> signature = new MethodSnapshotDTO<>();
+        signature.setClassName(resolve(mapArgsJson, null, "_type"));
+        signature.setMethodName(resolve(mapArgsJson, null, "_method"));
+        signature.setReturnType(resolve(mapArgsJson, null, "_returnType"));
+        signature.setMethodDuration(methodDuration);
+        signature.setArgs(unmapArgs(mapArgsJson));
+        final boolean exception = isException(mapObjectJson);
+        signature.setException(exception);
+        signature.setResponse(exception ? null : unmapObject(mapObjectJson, (Class<T>) resolveResponseType(mapArgsJson)));
+        return signature;
+    }
+
+    private static boolean isException(final String mapObjectJson) {
+        if (mapObjectJson == null) {
+            return false;
+        }
+        try {
+            JsonNode root = MAPPER.readTree(mapObjectJson);
+            return root != null && root.isObject() && root.has("exception");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static Class<?> resolveResponseType(final String mapArgsJson) {
+        final String returnType = resolve(mapArgsJson, null, "_returnType");
+        if (returnType == null || returnType.isBlank() || "void".equalsIgnoreCase(returnType)) {
+            return null;
+        }
+        try {
+            return Class.forName(returnType);
+        } catch (ClassNotFoundException e) {
+            return null;
         }
     }
 

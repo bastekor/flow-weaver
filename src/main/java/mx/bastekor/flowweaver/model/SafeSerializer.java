@@ -12,7 +12,7 @@ import java.util.*;
 public final class SafeSerializer {
 
     /**
-     * Versiónn sin envolturas de {@link #safeValue}.
+     * Versión sin envolturas de {@link #safeValue}.
      * <p>
      * No añade metadatos ({@code _type}, {@code _toString}, {@code _value}).
      * Retorna el objeto crudo para que Jackson lo serialice con su tipo natural:
