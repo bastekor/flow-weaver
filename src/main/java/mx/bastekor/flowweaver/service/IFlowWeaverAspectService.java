@@ -1,7 +1,7 @@
 package mx.bastekor.flowweaver.service;
 
-import mx.bastekor.flowweaver.model.AuditTrailContainer;
-import mx.bastekor.flowweaver.model.BusinessLogContainer;
+import mx.bastekor.flowweaver.context.AuditTrailContainer;
+import mx.bastekor.flowweaver.context.BusinessLogContainer;
 
 public interface IFlowWeaverAspectService {
 

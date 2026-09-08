@@ -4,7 +4,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.dto.BusinessLogDTO;
-import mx.bastekor.flowweaver.model.BusinessLogContainer;
+import mx.bastekor.flowweaver.context.BusinessLogContainer;
 
 import static mx.bastekor.flowweaver.mapper.DataParamMapper.createDataParamsDTO;
 import static org.apache.commons.lang3.StringUtils.trim;

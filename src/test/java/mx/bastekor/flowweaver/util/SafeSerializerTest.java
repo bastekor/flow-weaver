@@ -1,4 +1,4 @@
-package mx.bastekor.flowweaver.model;
+package mx.bastekor.flowweaver.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -167,7 +167,7 @@ class SafeSerializerTest {
 
         assertInstanceOf(Map.class, result);
         Map<?, ?> meta = (Map<?, ?>) result;
-        assertEquals("mx.bastekor.flowweaver.model.SafeSerializerTest$Dog", meta.get("_type"));
+        assertEquals("mx.bastekor.flowweaver.util.SafeSerializerTest$Dog", meta.get("_type"));
 
         Object rawValue = meta.get("_value");
         assertInstanceOf(Map.class, rawValue);

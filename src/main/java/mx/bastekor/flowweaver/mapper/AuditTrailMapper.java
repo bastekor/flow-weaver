@@ -3,7 +3,7 @@ package mx.bastekor.flowweaver.mapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import mx.bastekor.flowweaver.dto.AuditTrailDTO;
-import mx.bastekor.flowweaver.model.AuditTrailContainer;
+import mx.bastekor.flowweaver.context.AuditTrailContainer;
 
 import static mx.bastekor.flowweaver.mapper.DataParamMapper.createDataParamsDTO;
 import static org.apache.commons.lang3.StringUtils.trim;

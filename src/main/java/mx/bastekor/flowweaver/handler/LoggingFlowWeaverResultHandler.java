@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.config.FrameConfig;
 import mx.bastekor.flowweaver.exception.FlowWeaverException;
-import mx.bastekor.flowweaver.model.FlowWeaverRs;
+import mx.bastekor.flowweaver.dto.FlowWeaverResponse;
 import mx.bastekor.flowweaver.resolver.ResolutionError;
 import mx.bastekor.flowweaver.util.FrameFormatter;
 import org.springframework.stereotype.Component;
@@ -25,7 +25,7 @@ public class LoggingFlowWeaverResultHandler implements FlowWeaverResultHandler {
     private final FrameFormatter frameFormatter;
 
     @Override
-    public void handle(final FlowWeaverRs rs) throws FlowWeaverException {
+    public void handle(final FlowWeaverResponse rs) throws FlowWeaverException {
 
         if (isNull(rs.getRequestDTO())) {
             throw new FlowWeaverException(REQUEST_ISNULL, INTERNAL_FAILURE);

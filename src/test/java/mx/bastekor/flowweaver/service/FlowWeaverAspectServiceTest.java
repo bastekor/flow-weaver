@@ -15,10 +15,9 @@ import mx.bastekor.flowweaver.enums.StatusEnum;
 import mx.bastekor.flowweaver.handler.FlowWeaverResultHandler;
 import mx.bastekor.flowweaver.mapper.RequestDTOMapper;
 import mx.bastekor.flowweaver.mapper.SafeSnapshotMapper;
-import mx.bastekor.flowweaver.model.BusinessLogContainer;
-import mx.bastekor.flowweaver.model.SafeSerializer;
-
+import mx.bastekor.flowweaver.context.BusinessLogContainer;
 import mx.bastekor.flowweaver.util.FrameExtractor;
+import mx.bastekor.flowweaver.util.SafeSerializer;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;

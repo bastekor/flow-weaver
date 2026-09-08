@@ -4,7 +4,7 @@ import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.dto.BusinessLogDTO;
 import mx.bastekor.flowweaver.enums.Mode;
-import mx.bastekor.flowweaver.model.BusinessLogContainer;
+import mx.bastekor.flowweaver.context.BusinessLogContainer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

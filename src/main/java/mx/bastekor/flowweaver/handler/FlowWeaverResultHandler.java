@@ -2,7 +2,7 @@ package mx.bastekor.flowweaver.handler;
 
 import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.exception.FlowWeaverException;
-import mx.bastekor.flowweaver.model.FlowWeaverRs;
+import mx.bastekor.flowweaver.dto.FlowWeaverResponse;
 
 import java.util.Map;
 
@@ -16,5 +16,5 @@ public interface FlowWeaverResultHandler {
      * rs.fields         Mapa de campos planos en posición "key=value" sin ingreso en objetos.
      * @throws FlowWeaverException posible excepción a manejar.
      */
-    void handle(FlowWeaverRs rs) throws FlowWeaverException;
+    void handle(FlowWeaverResponse rs) throws FlowWeaverException;
 }

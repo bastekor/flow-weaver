@@ -4,7 +4,7 @@ import mx.bastekor.flowweaver.annotation.AuditTrail;
 import mx.bastekor.flowweaver.annotation.DataParam;
 import mx.bastekor.flowweaver.dto.AuditTrailDTO;
 import mx.bastekor.flowweaver.enums.Mode;
-import mx.bastekor.flowweaver.model.AuditTrailContainer;
+import mx.bastekor.flowweaver.context.AuditTrailContainer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

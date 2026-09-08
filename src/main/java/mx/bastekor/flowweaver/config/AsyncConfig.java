@@ -2,7 +2,7 @@ package mx.bastekor.flowweaver.config;
 
 import lombok.extern.slf4j.Slf4j;
 import mx.bastekor.flowweaver.context.FlowWeaverContext;
-import mx.bastekor.flowweaver.model.ThreadContainer;
+import mx.bastekor.flowweaver.context.ThreadContainer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskDecorator;
@@ -25,7 +25,7 @@ public class AsyncConfig {
         executor.setThreadNamePrefix("flow-weaver-");
         executor.setTaskDecorator(new FlowWeaverTaskDecorator());
         executor.initialize();
-        log.info("✅ FlowWeaver Executor inicializado con TaskDecorator");
+        log.info("FlowWeaver Executor inicializado con TaskDecorator");
 
         return executor;
     }
@@ -49,7 +49,7 @@ public class AsyncConfig {
                     if (!contextoPrevio) {
                         // Propagar sólo si el hijo NO tenía uno propio
                         FlowWeaverContext.setCurrentThreadContainer(parentThreadContainer);
-                        log.debug("🔄 Contexto propagado de [{}] a [{}]", parentThreadName, asyncThreadName);
+                        log.debug("Contexto propagado de [{}] a [{}]", parentThreadName, asyncThreadName);
                     }
                     runnable.run();
 

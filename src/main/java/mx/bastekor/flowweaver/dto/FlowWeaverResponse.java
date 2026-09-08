@@ -1,4 +1,4 @@
-package mx.bastekor.flowweaver.model;
+package mx.bastekor.flowweaver.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,7 +16,7 @@ import java.util.Map;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class FlowWeaverRs {
+public class FlowWeaverResponse {
     private String methodSignature;
     private String methodResponse;
     private String mappedDuration;

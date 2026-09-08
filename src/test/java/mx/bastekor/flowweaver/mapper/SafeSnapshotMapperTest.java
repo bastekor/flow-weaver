@@ -7,7 +7,7 @@ import lombok.Setter;
 import lombok.ToString;
 import mx.bastekor.flowweaver.annotation.BusinessLog;
 import mx.bastekor.flowweaver.dto.MethodSnapshotDTO;
-import mx.bastekor.flowweaver.model.SafeSerializer;
+import mx.bastekor.flowweaver.util.SafeSerializer;
 import mx.bastekor.flowweaver.resolver.ExpressionResolver;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;

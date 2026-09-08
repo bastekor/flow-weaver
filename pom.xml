@@ -11,7 +11,7 @@
 
     <groupId>mx.bastekor</groupId>
     <artifactId>flow-weaver</artifactId>
-    <version>0.1.1-BETA</version>
+    <version>1.0.0.RELEASE</version>
     <name>flow-weaver</name>
     <description>flow-weaver</description>
     <packaging>jar</packaging>

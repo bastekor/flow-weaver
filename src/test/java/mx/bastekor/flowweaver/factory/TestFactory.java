@@ -11,8 +11,8 @@ import mx.bastekor.flowweaver.dto.DataParamsDTO;
 import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.enums.Mode;
 import mx.bastekor.flowweaver.enums.StatusEnum;
-import mx.bastekor.flowweaver.model.AuditTrailContainer;
-import mx.bastekor.flowweaver.model.BusinessLogContainer;
+import mx.bastekor.flowweaver.context.AuditTrailContainer;
+import mx.bastekor.flowweaver.context.BusinessLogContainer;
 
 import java.util.UUID;
 import java.util.function.Consumer;

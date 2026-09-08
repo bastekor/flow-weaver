@@ -2,9 +2,6 @@ package mx.bastekor.flowweaver.context;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import mx.bastekor.flowweaver.model.AuditTrailContainer;
-import mx.bastekor.flowweaver.model.BusinessLogContainer;
-import mx.bastekor.flowweaver.model.ThreadContainer;
 
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.AUDIT_TRAIL_PREFIX;
 import static mx.bastekor.flowweaver.constant.FlowWeaverConstants.BUSINESS_LOG_PREFIX;

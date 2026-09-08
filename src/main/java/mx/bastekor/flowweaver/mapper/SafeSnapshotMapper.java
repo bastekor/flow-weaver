@@ -22,8 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static mx.bastekor.flowweaver.model.SafeSerializer.rawValue;
-import static mx.bastekor.flowweaver.model.SafeSerializer.safeValue;
+import static mx.bastekor.flowweaver.util.SafeSerializer.rawValue;
+import static mx.bastekor.flowweaver.util.SafeSerializer.safeValue;
 import static mx.bastekor.flowweaver.resolver.ExpressionResolver.resolve;
 
 @NoArgsConstructor(access = lombok.AccessLevel.PRIVATE)

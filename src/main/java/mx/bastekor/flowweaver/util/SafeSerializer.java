@@ -1,4 +1,4 @@
-package mx.bastekor.flowweaver.model;
+package mx.bastekor.flowweaver.util;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -12,16 +12,16 @@ import java.util.*;
 public final class SafeSerializer {
 
     /**
-     * Versión sin envolturas de {@link #safeValue}.
+     * VersiÃ³n sin envolturas de {@link #safeValue}.
      * <p>
-     * No añade metadatos ({@code _type}, {@code _toString}, {@code _value}).
+     * No aÃ±ade metadatos ({@code _type}, {@code _toString}, {@code _value}).
      * Retorna el objeto crudo para que Jackson lo serialice con su tipo natural:
      * <ul>
-     *   <li>String → {@code "texto"}</li>
-     *   <li>Integer → {@code 42}</li>
-     *   <li>Boolean → {@code true} / {@code false}</li>
-     *   <li>Map / POJO → {@code { ... }} anidado sin envoltura</li>
-     *   <li>Collection / Array → {@code [...]} sin envoltura</li>
+     *   <li>String â†’ {@code "texto"}</li>
+     *   <li>Integer â†’ {@code 42}</li>
+     *   <li>Boolean â†’ {@code true} / {@code false}</li>
+     *   <li>Map / POJO â†’ {@code { ... }} anidado sin envoltura</li>
+     *   <li>Collection / Array â†’ {@code [...]} sin envoltura</li>
      * </ul>
      * <p>
      * Cuando se alcanza {@code depth >= maxDepth} retorna un String plano
@@ -29,8 +29,8 @@ public final class SafeSerializer {
      *
      * @param value    objeto a serializar
      * @param depth    profundidad actual (quien llama inicia en 0)
-     * @param maxDepth profundidad máxima permitida
-     * @return representación cruda del objeto, null si value es null
+     * @param maxDepth profundidad mÃ¡xima permitida
+     * @return representaciÃ³n cruda del objeto, null si value es null
      */
     public static Object rawValue(Object value, int depth, int maxDepth) {
         if (value == null) {
@@ -81,7 +81,7 @@ public final class SafeSerializer {
             if (value instanceof Throwable t) {
                 fieldsMap.put("message", t.getMessage());
                 fieldsMap.put("cause", rawValue(t.getCause(), depth + 1, maxDepth));
-//                fieldsMap.put("stackTrace", rawValue(t.getStackTrace(), depth + 1, maxDepth)); // Pendiente atención
+//                fieldsMap.put("stackTrace", rawValue(t.getStackTrace(), depth + 1, maxDepth)); // Pendiente atenciÃ³n
             }
             for (Class<?> clazz = value.getClass(); clazz != null && clazz != Object.class; clazz = clazz.getSuperclass()) {
                 for (Field f : clazz.getDeclaredFields()) {

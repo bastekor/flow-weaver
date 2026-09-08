@@ -9,9 +9,9 @@ import mx.bastekor.flowweaver.dto.RequestDTO;
 import mx.bastekor.flowweaver.exception.FlowWeaverException;
 import mx.bastekor.flowweaver.handler.FlowWeaverResultHandler;
 import mx.bastekor.flowweaver.mapper.RequestDTOMapper;
-import mx.bastekor.flowweaver.model.AuditTrailContainer;
-import mx.bastekor.flowweaver.model.BusinessLogContainer;
-import mx.bastekor.flowweaver.model.FlowWeaverRs;
+import mx.bastekor.flowweaver.context.AuditTrailContainer;
+import mx.bastekor.flowweaver.context.BusinessLogContainer;
+import mx.bastekor.flowweaver.dto.FlowWeaverResponse;
 import mx.bastekor.flowweaver.util.FrameExtractor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -60,7 +60,7 @@ public class FlowWeaverAspectService implements IFlowWeaverAspectService {
     private void sendHandler(final String methodDuration, final Object object) {
         final Instant start = Instant.now();
 
-        final FlowWeaverRs rs = new FlowWeaverRs();
+        final FlowWeaverResponse rs = new FlowWeaverResponse();
 
         if (object instanceof BusinessLogContainer container) {
             rs.setMethodSignature(container.getExitSignature());
